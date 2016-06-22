@@ -1,6 +1,6 @@
 package test.filestore;
 
-import io.escriba.store.FileStore;
+import io.escriba.store.file.FileStore;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -25,6 +25,6 @@ public class FileStoreTest {
 	public void t01() {
 		FileStore store = fileStore();
 
-		store.collection("coll1").put();
+//		store.collection("coll1").put();
 	}
 }

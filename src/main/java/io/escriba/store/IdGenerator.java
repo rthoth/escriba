@@ -6,41 +6,42 @@ import java.util.zip.Checksum;
 
 public class IdGenerator {
 
+	public static final int RADIX = 32;
 	private static final char SEPARATOR = File.separatorChar;
-	private final short parts;
+	private final int parts;
 
 	public IdGenerator() {
-		this((short) 3);
+		this(3);
 	}
 
-	public IdGenerator(short parts) {
+	public IdGenerator(int parts) {
 		this.parts = parts;
 	}
 
 	public String generate(String key) {
 		byte[] bytes = key.getBytes();
 
-		Checksum adler32 = new CRC32();
+		Checksum checksum = new CRC32();
 		String[] strings = new String[parts];
-		short i = 0, limit;
+		int i = 0, limit;
 
 		if (bytes.length > parts) {
 
-			short inc = (short) (bytes.length / parts);
-			short mod = (short) (bytes.length % parts);
-			limit = (short) (parts - 1);
-			short off;
+			int inc = bytes.length / parts;
+			int mod = bytes.length % parts;
+			limit = parts - 1;
+			int off;
 
 			for (off = 0; i < limit; i++, off += inc) {
-				adler32.update(bytes, off, inc);
-				strings[i] = Long.toHexString(adler32.getValue());
+				checksum.update(bytes, off, inc);
+				strings[i] = Long.toString(checksum.getValue(), RADIX);
 			}
 
-			adler32.update(bytes, off, inc + mod);
-			strings[i] = Long.toHexString(adler32.getValue());
+			checksum.update(bytes, off, inc + mod);
+			strings[i] = Long.toString(checksum.getValue(), RADIX);
 		} else {
-			adler32.update(bytes, 0, bytes.length);
-			strings[0] = Long.toHexString(adler32.getValue());
+			checksum.update(bytes, 0, bytes.length);
+			strings[0] = Long.toString(checksum.getValue(), RADIX);
 			for (i = 1; i < strings.length; i++) {
 				strings[i] = strings[0];
 			}
@@ -48,7 +49,7 @@ public class IdGenerator {
 
 		StringBuilder sb = new StringBuilder();
 
-		for (i = 0, limit = (short) (parts - 1); i < limit; i++) {
+		for (i = 0, limit = parts - 1; i < limit; i++) {
 			sb.append(strings[i]).append(SEPARATOR);
 		}
 
