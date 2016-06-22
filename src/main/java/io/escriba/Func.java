@@ -1,6 +1,6 @@
 package io.escriba;
 
-public class Func {
+public abstract class Func {
 
 	private Func() {
 	}
@@ -11,6 +11,14 @@ public class Func {
 
 	public static <A, B, C> T3<A, B, C> t3(A a, B b, C c) {
 		return new T3(a, b, c);
+	}
+
+	public interface C0 {
+		void apply() throws Exception;
+	}
+
+	public interface C2<A, B> {
+		void apply(A a, B b) throws Exception;
 	}
 
 	public interface F0<R> {
@@ -25,6 +33,16 @@ public class Func {
 		R apply(A a, B b) throws Exception;
 	}
 
+	public static class T2<A, B> {
+		public final A a;
+		public final B b;
+
+		public T2(A a, B b) {
+			this.a = a;
+			this.b = b;
+		}
+	}
+
 	public static class T3<A, B, C> {
 		public final A a;
 		public final B b;
@@ -34,16 +52,6 @@ public class Func {
 			this.a = a;
 			this.b = b;
 			this.c = c;
-		}
-	}
-
-	public static class T2<A, B> {
-		public final A a;
-		public final B b;
-
-		public T2(A a, B b) {
-			this.a = a;
-			this.b = b;
 		}
 	}
 }
