@@ -1,6 +1,7 @@
 package test;
 
-import io.escriba.Func;
+import io.escriba.functional.F1;
+import io.escriba.functional.T3;
 
 import java.io.Closeable;
 import java.io.DataOutputStream;
@@ -22,7 +23,7 @@ public class Net {
 		}
 	}
 
-	public static Connection on(String host, int port, Func.T3<Short, String, String> t3) throws IOException {
+	public static Connection on(String host, int port, T3<Short, String, String> t3) throws IOException {
 		return new Connection(host, port, t3);
 	}
 
@@ -30,10 +31,10 @@ public class Net {
 
 		private final String host;
 		private final int port;
-		private final Func.T3<Short, String, String> t3;
+		private final T3<Short, String, String> t3;
 		private Socket socket;
 
-		private Connection(String host, int port, Func.T3<Short, String, String> t3) throws IOException {
+		private Connection(String host, int port, T3<Short, String, String> t3) throws IOException {
 			//this.socket = new Socket(InetAddress.getByName(host), port);
 			this.host = host;
 			this.port = port;
@@ -63,7 +64,7 @@ public class Net {
 			}
 		}
 
-		public <R> R execute(Func.F1<R, Socket> func) throws Exception {
+		public <R> R execute(F1<R, Socket> func) throws Exception {
 			R r;
 
 			try {

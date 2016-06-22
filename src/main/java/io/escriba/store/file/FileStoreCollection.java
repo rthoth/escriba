@@ -1,6 +1,10 @@
 package io.escriba.store.file;
 
 import io.escriba.Func;
+import io.escriba.functional.Callback0;
+import io.escriba.functional.Callback2;
+import io.escriba.functional.Callback3;
+import io.escriba.functional.T2;
 import io.escriba.store.IdGenerator;
 import io.escriba.store.Store;
 import io.escriba.store.StoreCollection;
@@ -22,6 +26,15 @@ public class FileStoreCollection extends StoreCollection {
 		this.directory = directory;
 		this.name = name;
 		this.valueIdGen = valueIdGen;
+
+		if (!directory.exists()) {
+			directory.mkdirs();
+		}
+	}
+
+	@Override
+	public void get(String key, Store.Getter getter, Store.Fail fail) {
+		new GetContext(key, getter, fail);
 	}
 
 	@Override
@@ -29,81 +42,85 @@ public class FileStoreCollection extends StoreCollection {
 		new PutContext(key, putter, fail);
 	}
 
-	private class Closer implements Func.C0 {
-		private final PutContext context;
+	private class Closer<A> implements Callback0 {
+		private final Context<A> context;
 
-		public Closer(PutContext context) {
+		public Closer(Context<A> context) {
 			this.context = context;
 		}
 
 		@Override
 		public void apply() throws Exception {
-			this.context.close0(true);
+			context.close(true);
 		}
 	}
 
-	private class Locker implements CompletionHandler<FileLock, Object> {
-		private final PutContext context;
+	public abstract class Context<A> implements AutoCloseable {
+		protected AsynchronousFileChannel channel;
+		protected boolean closed = false;
+		protected Closer closer = new Closer(this);
+		protected final Store.Fail fail;
+		protected FileLock lock;
+		// User code
+		protected final Callback3<A, Callback2<ByteBuffer, Long>, Callback0> userCode;
 
-		public Locker(PutContext context) {
-			this.context = context;
-		}
-
-		@Override
-		public void completed(FileLock result, Object attachment) {
-			this.context.lock = result;
-			this.context.invokePutter(null);
-		}
-
-		@Override
-		public void failed(Throwable exc, Object attachment) {
-			this.context.invokeFail(exc);
-		}
-	}
-
-	private class PutContext {
-		private AsynchronousFileChannel channel = null;
-		private Func.C0 close = new Closer(this);
-		private boolean closed = false;
-		private final Store.Fail fail;
-		private final File file;
-		public FileLock lock;
-		private final Store.Putter putter;
-		private Func.C2<ByteBuffer, Long> write = new Writer(this);
-
-		public PutContext(String key, Store.Putter putter, Store.Fail fail) {
-			this.file = new File(directory, valueIdGen.generate(key));
-			this.putter = putter;
+		public Context(String key, Callback3<A, Callback2<ByteBuffer, Long>, Callback0> userCode, Store.Fail fail) {
+			this.userCode = userCode;
 			this.fail = fail;
 
-			if (!file.getParentFile().exists())
+			File file = new File(directory, valueIdGen.generate(key));
+			File parent = file.getParentFile();
+
+			if (!parent.exists())
 				try {
-					this.file.getParentFile().mkdirs();
 					// TODO: Criar arquivo de controle
+					parent.mkdirs();
 				} catch (Exception e) {
-					invokeFail(e);
+					callFail(e);
 				}
 
 			if (closed == false) {
 				try {
-					channel = AsynchronousFileChannel.open(file.toPath(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+					channel = openChannel(file);
 				} catch (IOException e) {
-					invokeFail(e);
+					callFail(e);
 				}
 			}
-
-			if (closed == false)
-				channel.lock(null, new Locker(this));
 		}
 
-		private void close0(boolean invoke) {
+		protected void callFail(Throwable throwable) {
+			if (closed == false) {
+				close(false);
+
+				if (fail != null)
+					try {
+						fail.apply(throwable);
+					} catch (Exception e) {
+
+					}
+			}
+		}
+
+		protected void callUserCode(A a) {
+			if (closed == false)
+				try {
+					userCode.apply(a, callback(), closer);
+				} catch (Exception e) {
+					callFail(e);
+				}
+		}
+
+		protected abstract Callback2<ByteBuffer, Long> callback();
+
+		@Override
+		public void close() throws Exception {
+			close(true);
+		}
+
+		protected void close(boolean invoke) {
 			if (closed == false) {
 				closed = true;
-				if (lock != null)
-					try {
-						lock.release();
-					} catch (IOException e) {
-					}
+
 				if (channel != null && channel.isOpen())
 					try {
 						channel.close();
@@ -117,29 +134,111 @@ public class FileStoreCollection extends StoreCollection {
 			}
 		}
 
-		private void invokeFail(Throwable throwable) {
-			if (closed == false) {
-				close0(false);
+		protected abstract AsynchronousFileChannel openChannel(File file) throws IOException;
+	}
 
-				if (fail != null)
-					try {
-						fail.apply(throwable);
-					} catch (Exception e) {
+	private class GetContext extends Context<T2<Integer, ByteBuffer>> {
 
-					}
+		private final Reader reader;
+
+		public GetContext(String key, Store.Getter getter, Store.Fail fail) {
+			super(key, getter, fail);
+			reader = new Reader(this);
+			try {
+				callUserCode(null);
+			} catch (Exception e) {
+				callFail(e);
 			}
 		}
 
-		private void invokePutter(Integer writen) {
-			try {
-				putter.apply(writen, write, close);
-			} catch (Exception e) {
-				invokeFail(e);
-			}
+		@Override
+		protected Callback2<ByteBuffer, Long> callback() {
+			return reader;
+		}
+
+		@Override
+		protected AsynchronousFileChannel openChannel(File file) throws IOException {
+			return AsynchronousFileChannel.open(file.toPath(), StandardOpenOption.READ);
 		}
 	}
 
-	private class Writer implements Func.C2<ByteBuffer, Long>, CompletionHandler<Integer, Object> {
+	private class GetLocker<A> implements CompletionHandler<FileLock, Object> {
+		private final Context<A> context;
+
+		public GetLocker(Context<A> context) {
+			this.context = context;
+		}
+
+		@Override
+		public void completed(FileLock fileLock, Object attachment) {
+			context.lock = fileLock;
+			context.callUserCode(null);
+		}
+
+		@Override
+		public void failed(Throwable throwable, Object attachment) {
+			context.callFail(throwable);
+		}
+	}
+
+	private class PutContext extends Context<Integer> {
+		private final Writer writer;
+
+		public PutContext(String key, Store.Putter putter, Store.Fail fail) {
+			super(key, putter, fail);
+
+			writer = new Writer(this);
+
+			if (closed == false)
+				channel.lock(null, new GetLocker(this));
+		}
+
+		@Override
+		protected Callback2<ByteBuffer, Long> callback() {
+			return writer;
+		}
+
+		@Override
+		protected AsynchronousFileChannel openChannel(File file) throws IOException {
+			return AsynchronousFileChannel.open(file.toPath(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+		}
+	}
+
+	private class Reader implements Callback2<ByteBuffer, Long> {
+		protected final GetContext context;
+
+		public Reader(GetContext context) {
+			this.context = context;
+		}
+
+		@Override
+		public void apply(ByteBuffer buffer, Long position) throws Exception {
+			context.channel.read(buffer, position, null, new ReaderHandler(context, buffer));
+		}
+	}
+
+	private class ReaderHandler implements CompletionHandler<Integer, Object> {
+
+		private final ByteBuffer buffer;
+		private final GetContext context;
+
+		public ReaderHandler(GetContext context, ByteBuffer buffer) {
+			this.context = context;
+			this.buffer = buffer;
+		}
+
+		@Override
+		public void completed(Integer read, Object attachment) {
+			context.callUserCode(Func.t2(read, buffer));
+		}
+
+		@Override
+		public void failed(Throwable throwable, Object attachment) {
+			context.callFail(throwable);
+		}
+	}
+
+	private class Writer implements Callback2<ByteBuffer, Long>, CompletionHandler<Integer, Object> {
 
 		private final PutContext context;
 
@@ -148,18 +247,18 @@ public class FileStoreCollection extends StoreCollection {
 		}
 
 		@Override
-		public void apply(ByteBuffer byteBuffer, Long position) throws Exception {
-			context.channel.write(byteBuffer, position, null, this);
+		public void apply(ByteBuffer buffer, Long position) throws Exception {
+			context.channel.write(buffer, position, null, this);
 		}
 
 		@Override
-		public void completed(Integer result, Object attachment) {
-			context.invokePutter(result);
+		public void completed(Integer writen, Object attachment) {
+			context.callUserCode(writen);
 		}
 
 		@Override
-		public void failed(Throwable exc, Object attachment) {
-			context.invokeFail(exc);
+		public void failed(Throwable throwable, Object attachment) {
+			context.callFail(throwable);
 		}
 	}
 }
