@@ -1,24 +1,22 @@
 package io.escriba.store.file;
 
 import io.escriba.store.Put;
+import io.escriba.store.StoreException;
 
-class FilePut extends Put implements FileContextable {
+import java.io.IOException;
 
-	private final Context context;
-
+public class FilePut extends FileValue implements Put {
 	public FilePut(FileStoreCollection collection, String key) {
-		context = new Context(this, collection, key);
+		super(collection, key);
 	}
 
 	@Override
-	public void ready() {
-
-		if (readyCallback != null)
-			readyCallback.apply();
-	}
-
-	@Override
-	public void start() {
-		context.lock();
+	public Put async(PutHandler handler) {
+		try {
+			new AsyncPut(this, handler);
+		} catch (IOException e) {
+			throw new StoreException(e);
+		}
+		return this;
 	}
 }

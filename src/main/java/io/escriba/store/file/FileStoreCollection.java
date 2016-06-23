@@ -1,6 +1,9 @@
 package io.escriba.store.file;
 
-import io.escriba.store.*;
+import io.escriba.store.Get;
+import io.escriba.store.IdGenerator;
+import io.escriba.store.Put;
+import io.escriba.store.StoreCollection;
 
 import java.io.File;
 
@@ -21,7 +24,7 @@ public class FileStoreCollection extends StoreCollection {
 
 	@Override
 	public Get get(String key) {
-		return new GetContext(this, key);
+		return null;
 	}
 
 	@Override

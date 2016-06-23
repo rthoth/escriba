@@ -3,6 +3,7 @@ package test.filestore;
 import io.escriba.store.Close;
 import io.escriba.store.Put;
 import io.escriba.store.file.FileStore;
+import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -20,40 +21,36 @@ public class FileStoreTest {
 	}
 
 	@Test
-	public void writeAndRetrieve() {
+	public void writeAndRetrieve() throws InterruptedException {
 		FileStore store = fileStore();
 
-		StringBuilder sb = new StringBuilder();
+		final StringBuilder sb = new StringBuilder();
 
 		for (int i = 0, l = 2048 * 2048; i < l; i++) {
 			sb.append(String.valueOf(i % 10));
 		}
 
-		final String str = sb.toString();
-		final ByteBuffer[] buffer = {ByteBuffer.allocate(str.length())};
-		buffer[0].put(str.getBytes()).rewind();
+		final ByteBuffer buffer = ByteBuffer.allocate(sb.length());
+		buffer.put(sb.toString().getBytes()).rewind();
 
-		store.collection("col").put("value")
-			.onReady(new Put.ReadyCallback() {
-				@Override
-				public void apply(Put.Write write, Close close) throws Exception {
-					write.apply(buffer[0], (long) 0);
-				}
-			})
-			.onWrite(new Put.WriteCallback() {
-				@Override
-				public void apply(Integer writen, Put.Write write, Close close) throws Exception {
-					if (buffer[0] != null) {
-						buffer[0] = ByteBuffer.allocate(str.length());
-						buffer[0].put(str.getBytes()).rewind();
-						write.apply(buffer[0], (long) str.length());
-						buffer[0] = null;
-					} else
-						close.apply();
-				}
-			})
-			.onError(null)
-			.start()
-		;
+		store.collection("col").put("value").async(new Put.PutHandler() {
+			@Override
+			public void data(int written, ByteBuffer buffer, Put.Write write, Close close) throws Exception {
+				Assertions.assertThat(written).isEqualTo(sb.length());
+				close.apply();
+			}
+
+			@Override
+			public void error(Throwable throwable) throws Exception {
+				throw new Exception("Ops!");
+			}
+
+			@Override
+			public void ready(Put.Write write, Close close) throws Exception {
+				write.apply(buffer, 0L);
+			}
+		});
+
+		Thread.sleep(100000);
 	}
 }
