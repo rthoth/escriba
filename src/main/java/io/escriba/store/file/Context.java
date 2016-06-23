@@ -11,38 +11,46 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.FileLock;
 
-public abstract class Context<A> implements AutoCloseable {
+public class Context implements AutoCloseable {
 	protected AsynchronousFileChannel channel;
 	protected boolean closed = false;
 	protected Closer closer = new Closer(this);
+	private final FileContextable context;
 	protected final Store.Fail fail;
 	protected FileLock lock;
 	// User code
 	protected final Callback3<A, Callback2<ByteBuffer, Long>, Callback0> userCode;
 
-	public Context(FileStoreCollection collection, String key, Callback3<A, Callback2<ByteBuffer, Long>, Callback0> userCode, Store.Fail fail) {
-		this.userCode = userCode;
-		this.fail = fail;
+	public Context(FileContextable context, FileStoreCollection collection, String key) {
+		this.context = context;
 
 		File file = new File(collection.directory, collection.valueIdGen.generate(key));
 		File parent = file.getParentFile();
-
-		if (!parent.exists())
-			try {
-				// TODO: Criar arquivo de controle
-				parent.mkdirs();
-			} catch (Exception e) {
-				callFail(e);
-			}
-
-		if (closed == false) {
-			try {
-				channel = openChannel(file);
-			} catch (IOException e) {
-				callFail(e);
-			}
-		}
 	}
+
+//	public Context(FileStoreCollection collection, String key, Callback3<A, Callback2<ByteBuffer, Long>, Callback0> userCode, Store.Fail fail) {
+//		this.userCode = userCode;
+//		this.fail = fail;
+//
+//		File file = new File(collection.directory, collection.valueIdGen.generate(key));
+//		File parent = file.getParentFile();
+//
+//		if (!parent.exists())
+//			try {
+//				// TODO: Criar arquivo de controle
+//				parent.mkdirs();
+//			} catch (Exception e) {
+//				callFail(e);
+//			}
+//
+//		if (closed == false) {
+//			try {
+//				channel = openChannel(file);
+//			} catch (IOException e) {
+//				callFail(e);
+//			}
+//		}
+//	}
 
 	protected void callFail(Throwable throwable) {
 		if (closed == false) {
@@ -88,6 +96,15 @@ public abstract class Context<A> implements AutoCloseable {
 						}
 				}
 		}
+	}
+
+	public void lock() {
+		channel.lock(null, new GetLocker(this));
+	}
+
+	public void locked(FileLock lock) {
+		this.lock = lock;
+		context.ready();
 	}
 
 	protected abstract AsynchronousFileChannel openChannel(File file) throws IOException;

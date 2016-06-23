@@ -1,7 +1,7 @@
 package io.escriba.store.file;
 
 import io.escriba.functional.Callback2;
-import io.escriba.functional.T2;
+import io.escriba.store.Get;
 import io.escriba.store.Store;
 
 import java.io.File;
@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.file.StandardOpenOption;
 
-class GetContext extends Context<T2<Integer, ByteBuffer>> {
+class GetContext extends Get {
 
 	private final Reader reader;
 
