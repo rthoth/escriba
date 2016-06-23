@@ -23,6 +23,16 @@ public abstract class AsyncOperation<V extends FileValue, H extends ErrorHandler
 		if (open) {
 			open = false;
 
+			if (lock != null) {
+				try {
+					lock.close();
+				} catch (Exception e) {
+
+				} finally {
+					lock = null;
+				}
+			}
+
 			if (channel.isOpen()) {
 				try {
 					channel.close();

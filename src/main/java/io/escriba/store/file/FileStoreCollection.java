@@ -24,7 +24,7 @@ public class FileStoreCollection extends StoreCollection {
 
 	@Override
 	public Get get(String key) {
-		return null;
+		return new FileGet(this, key);
 	}
 
 	@Override

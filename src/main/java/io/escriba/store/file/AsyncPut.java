@@ -53,9 +53,9 @@ public class AsyncPut extends AsyncOperation<FilePut, Put.PutHandler> implements
 			}
 
 			@Override
-			public void failed(Throwable exc, T2<AsyncPut, ByteBuffer> attachment) {
+			public void failed(Throwable throwable, T2<AsyncPut, ByteBuffer> attachment) {
 				attachment.a.close(false);
-				attachment.a.error(exc);
+				attachment.a.error(throwable);
 			}
 		};
 

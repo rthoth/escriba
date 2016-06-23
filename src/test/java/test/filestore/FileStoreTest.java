@@ -1,6 +1,7 @@
 package test.filestore;
 
 import io.escriba.store.Close;
+import io.escriba.store.Get;
 import io.escriba.store.Put;
 import io.escriba.store.file.FileStore;
 import org.assertj.core.api.Assertions;
@@ -48,6 +49,24 @@ public class FileStoreTest {
 			@Override
 			public void ready(Put.Write write, Close close) throws Exception {
 				write.apply(buffer, 0L);
+			}
+		});
+
+		store.collection("col").get("value").async(new Get.GetHandler() {
+			@Override
+			public void data(int total, ByteBuffer buffer, Get.Read read, Close close) throws Exception {
+				Assertions.assertThat(total).isEqualTo(sb.length());
+				close.apply();
+			}
+
+			@Override
+			public void error(Throwable throwable) throws Exception {
+
+			}
+
+			@Override
+			public void ready(Get.Read read, Close close) throws Exception {
+				read.apply(ByteBuffer.allocate(sb.length()), 0L);
 			}
 		});
 
