@@ -9,23 +9,23 @@ public abstract class Command {
 		this.tuple = tuple;
 	}
 
+	public static Get get(T2<String, String> tuple) {
+		return new Get(tuple);
+	}
+
 	public static Put put(T2<String, String> tuple) {
 		return new Put(tuple);
 	}
 
-	public static Get get(T2<String, String> tuple) {
-		return new Get(tuple);
+	public static class Get extends Command {
+		public Get(T2<String, String> tuple) {
+			super(tuple);
+		}
 	}
 
 	public static class Put extends Command {
 
 		public Put(T2<String, String> tuple) {
-			super(tuple);
-		}
-	}
-
-	public static class Get extends Command {
-		public Get(T2<String, String> tuple) {
 			super(tuple);
 		}
 	}
