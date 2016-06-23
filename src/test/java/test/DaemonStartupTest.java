@@ -1,6 +1,6 @@
 package test;
 
-import io.escriba.Config;
+import io.escriba.server.Config;
 import io.escriba.Func;
 import io.escriba.functional.F1;
 import io.escriba.server.Method;

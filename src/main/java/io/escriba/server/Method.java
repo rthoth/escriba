@@ -1,12 +1,11 @@
 package io.escriba.server;
 
-public class Method {
-	public static final short GET = 1;
-	public static final short PUT = 2;
+public enum Method {
+	PUT(10), GET(20);
 
-	private Method() {
+	public final byte code;
 
+	Method(int code) {
+		this.code = (byte) code;
 	}
-
-
 }
