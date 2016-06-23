@@ -1,17 +1,15 @@
 package test.filestore;
 
-import io.escriba.functional.Callback0;
-import io.escriba.functional.Callback2;
-import io.escriba.functional.T2;
-import io.escriba.store.Store;
+import io.escriba.store.Close;
+import io.escriba.store.Get;
+import io.escriba.store.Put;
 import io.escriba.store.file.FileStore;
+import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Date;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class FileStoreTest {
 
@@ -24,45 +22,54 @@ public class FileStoreTest {
 	}
 
 	@Test
-	public void writeAndRetrieve() {
+	public void writeAndRetrieve() throws InterruptedException {
 		FileStore store = fileStore();
 
-		final String s1 = "A test", s2 = " ok!";
+		final StringBuilder sb = new StringBuilder();
 
+		for (int i = 0, l = 2048 * 2048; i < l; i++) {
+			sb.append(String.valueOf(i % 10));
+		}
 
-		store.collection("coll1").put("value", new Store.Putter() {
+		final ByteBuffer buffer = ByteBuffer.allocate(sb.length());
+		buffer.put(sb.toString().getBytes()).rewind();
+
+		store.collection("col").put("value").async(new Put.PutHandler() {
 			@Override
-			public void apply(Integer writen, Callback2<ByteBuffer, Long> write, Callback0 close) throws Exception {
-				if (writen == null) {
-					ByteBuffer buffer = ByteBuffer.allocate(s1.length());
-					buffer.put(s1.getBytes()).rewind();
-					write.apply(buffer, (long) 0);
+			public void data(int written, ByteBuffer buffer, Put.Write write, Close close) throws Exception {
+				Assertions.assertThat(written).isEqualTo(sb.length());
+				close.apply();
+			}
 
-				} else if (writen == s1.length()) {
-					ByteBuffer buffer = ByteBuffer.allocate(s2.length());
-					buffer.put(s2.getBytes()).rewind();
-					write.apply(buffer, (long) s1.length());
+			@Override
+			public void error(Throwable throwable) throws Exception {
+				throw new Exception("Ops!");
+			}
 
-				} else {
-					close.apply();
-				}
+			@Override
+			public void ready(Put.Write write, Close close) throws Exception {
+				write.apply(buffer, 0L);
 			}
 		});
 
-		store.collection("coll1").get("value", new Store.Getter() {
+		store.collection("col").get("value").async(new Get.GetHandler() {
 			@Override
-			public void apply(T2<Integer, ByteBuffer> last, Callback2<ByteBuffer, Long> read, Callback0 close) throws Exception {
-				if (last == null) {
-					read.apply(ByteBuffer.allocate(10), (long) 0);
+			public void data(int total, ByteBuffer buffer, Get.Read read, Close close) throws Exception {
+				Assertions.assertThat(total).isEqualTo(sb.length());
+				close.apply();
+			}
 
-				} else if (last.a == 10) {
-					String value = new String(last.b.array());
-					assertThat(value).isEqualTo(s1.concat(s2));
+			@Override
+			public void error(Throwable throwable) throws Exception {
 
-				} else {
-					close.apply();
-				}
+			}
+
+			@Override
+			public void ready(Get.Read read, Close close) throws Exception {
+				read.apply(ByteBuffer.allocate(sb.length()), 0L);
 			}
 		});
+
+		Thread.sleep(100000);
 	}
 }
