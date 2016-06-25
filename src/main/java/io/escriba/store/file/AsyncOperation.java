@@ -1,6 +1,6 @@
 package io.escriba.store.file;
 
-import io.escriba.store.ErrorHandler;
+import io.escriba.ErrorHandler;
 
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.FileLock;

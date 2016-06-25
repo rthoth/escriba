@@ -15,6 +15,6 @@ public class FileGet extends FileValue implements Get {
 		} catch (Exception e) {
 			throw new StoreException(e);
 		}
-		return null;
+		return this;
 	}
 }

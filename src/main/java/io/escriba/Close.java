@@ -1,4 +1,4 @@
-package io.escriba.store;
+package io.escriba;
 
 import io.escriba.functional.Callback0;
 

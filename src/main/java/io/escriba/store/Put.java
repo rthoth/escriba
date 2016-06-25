@@ -1,5 +1,7 @@
 package io.escriba.store;
 
+import io.escriba.Close;
+import io.escriba.ErrorHandler;
 import io.escriba.functional.Callback2;
 
 import java.nio.ByteBuffer;

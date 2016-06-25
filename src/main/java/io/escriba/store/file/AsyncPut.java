@@ -2,7 +2,7 @@ package io.escriba.store.file;
 
 import io.escriba.Func;
 import io.escriba.functional.T2;
-import io.escriba.store.Close;
+import io.escriba.Close;
 import io.escriba.store.Put;
 
 import java.io.IOException;

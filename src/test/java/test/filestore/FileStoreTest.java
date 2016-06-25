@@ -1,6 +1,6 @@
 package test.filestore;
 
-import io.escriba.store.Close;
+import io.escriba.Close;
 import io.escriba.store.Get;
 import io.escriba.store.Put;
 import io.escriba.store.file.FileStore;
