@@ -1,4 +1,4 @@
-package io.escriba.server;
+package io.escriba.server.server;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
