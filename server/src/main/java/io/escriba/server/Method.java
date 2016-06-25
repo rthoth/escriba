@@ -1,4 +1,4 @@
-package io.escriba.server;
+package io.escriba.server.server;
 
 public enum Method {
 	PUT(10), GET(20);
