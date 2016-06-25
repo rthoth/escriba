@@ -1,10 +1,10 @@
 package test;
 
-import io.escriba.server.Config;
+import io.escriba.server.server.Config;
 import io.escriba.Func;
 import io.escriba.functional.F1;
-import io.escriba.server.Method;
-import io.escriba.server.Server;
+import io.escriba.server.server.Method;
+import io.escriba.server.server.Server;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
