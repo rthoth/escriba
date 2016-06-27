@@ -32,6 +32,11 @@ public class HashCollection implements Collection {
 		return new AsyncGet(this, key, readyHandler, readHandler, null);
 	}
 
+	@Override
+	public Get get(String key, Get.ReadyHandler readyHandler, Get.ReadHandler readHandler, ErrorHandler errorHandler) throws Exception {
+		return new AsyncGet(this, key, readyHandler, readHandler, errorHandler);
+	}
+
 	File getFile(String key) {
 		Data data = map.get(key);
 

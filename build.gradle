@@ -25,9 +25,12 @@ dependencies {
 
 
 project(':server') {
-    
+
+    def NettyVersion = "4.1.1.Final"
+
     dependencies {
         compile project(':')
-        compile 'io.netty:netty-transport:4.1.1.Final'
+        compile "io.netty:netty-transport:${NettyVersion}"
+        compile "io.netty:netty-codec-http:${NettyVersion}"
     }
 }
