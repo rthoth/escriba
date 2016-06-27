@@ -1,5 +1,5 @@
 package io.escriba.functional;
 
 public interface Callback0 {
-	void apply();
+	void apply() throws Exception;
 }

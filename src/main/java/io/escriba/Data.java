@@ -84,4 +84,18 @@ public class Data {
 		path = null;
 		status = Creating;
 	}
+
+	public Data(String path) {
+		accessDate = createDate = updateDate = new Date();
+		this.path = path;
+		status = Creating;
+	}
+
+	public Data path(String path) {
+		return new Data(accessDate, createDate, path, status, updateDate);
+	}
+
+	public Data status(Status status) {
+		return new Data(accessDate, createDate, path, status, updateDate);
+	}
 }

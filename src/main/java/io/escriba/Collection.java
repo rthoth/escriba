@@ -1,5 +1,11 @@
 package io.escriba;
 
 public interface Collection {
-	Put put(String key);
+
+	Get get(String key, Get.ReadyHandler readyHandler, Get.ReadHandler readHandler) throws Exception;
+
+	Put put(String key, Put.ReadyHandler readyHandler, Put.WrittenHandler writtenHandler) throws Exception;
+
+	Put put(String key, Put.ReadyHandler readyHandler, Put.WrittenHandler writtenHandler, ErrorHandler errorHandler) throws Exception;
+
 }

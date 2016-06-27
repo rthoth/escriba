@@ -1,6 +1,5 @@
 package io.escriba;
 
 public interface ErrorHandler {
-
-	void error(Throwable throwable);
+	void apply(Throwable throwable);
 }

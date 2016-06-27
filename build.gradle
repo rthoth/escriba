@@ -12,7 +12,7 @@ allprojects {
     }
 
     dependencies {
-        testCompile 'org.assertj:assertj-core:2.4.1'
+        testCompile 'org.assertj:assertj-core:3.4.1'
         testCompile 'org.testng:testng:6.9.10'
     }
 
