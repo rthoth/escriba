@@ -1,15 +1,13 @@
 package io.escriba.hash;
 
-import io.escriba.Close;
-import io.escriba.ErrorHandler;
-import io.escriba.Get;
-import io.escriba.Read;
+import io.escriba.*;
 import io.escriba.functional.T2;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.channels.FileLock;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
 
 public class AsyncGet implements Get, Async, Close {
@@ -53,7 +51,11 @@ public class AsyncGet implements Get, Async, Close {
 	@Override
 	public AsynchronousFileChannel getChannel() throws Exception {
 		if (channel == null)
-			channel = AsynchronousFileChannel.open(collection.getFile(key).toPath(), StandardOpenOption.CREATE, StandardOpenOption.READ);
+			try {
+				channel = AsynchronousFileChannel.open(collection.getFile(key).toPath(), StandardOpenOption.CREATE, StandardOpenOption.READ);
+			} catch (NoSuchFileException noFileEx) {
+				throw new EscribaException.NoValue(key, collection.name, noFileEx);
+			}
 		return channel;
 	}
 
@@ -77,7 +79,11 @@ public class AsyncGet implements Get, Async, Close {
 			}
 		};
 
-		readyHandler.apply(reader, this);
+		try {
+			readyHandler.apply(channel.size(), reader, this);
+		} catch (Exception e) {
+			error(e);
+		}
 	}
 
 	private void read(Integer total, ByteBuffer buffer) {

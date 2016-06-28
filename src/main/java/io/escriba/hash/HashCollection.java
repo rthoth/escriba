@@ -5,6 +5,8 @@ import org.mapdb.Atomic;
 import org.mapdb.HTreeMap;
 
 import java.io.File;
+import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 
 import static java.io.File.separator;
 import static java.lang.Integer.toHexString;
@@ -15,7 +17,7 @@ public class HashCollection implements Collection {
 	private final Atomic.Long atomic;
 	private final File diretory;
 	final HTreeMap<String, Data> map;
-	private final String name;
+	final String name;
 
 	public HashCollection(String name, HTreeMap<String, Data> map, File directory, Atomic.Long atomic) {
 		this.name = name;
@@ -35,6 +37,11 @@ public class HashCollection implements Collection {
 	@Override
 	public Get get(String key, Get.ReadyHandler readyHandler, Get.ReadHandler readHandler, ErrorHandler errorHandler) throws Exception {
 		return new AsyncGet(this, key, readyHandler, readHandler, errorHandler);
+	}
+
+	@Override
+	public FileChannel getChannel(String key) throws Exception {
+		return FileChannel.open(getFile(key).toPath(), StandardOpenOption.READ);
 	}
 
 	File getFile(String key) {

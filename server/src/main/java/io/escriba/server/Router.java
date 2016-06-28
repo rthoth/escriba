@@ -4,8 +4,8 @@ import io.escriba.Store;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpRequest;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -25,13 +25,19 @@ public class Router extends ChannelInboundHandlerAdapter {
 
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-		super.channelRead(ctx, msg);
-
-		if (msg instanceof HttpRequest)
-			route((HttpRequest) msg, ctx);
+		if (msg instanceof FullHttpRequest)
+			route((FullHttpRequest) msg, ctx);
 	}
 
-	private void route(HttpRequest request, ChannelHandlerContext ctx) {
+	@Override
+	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+		ctx.channel().closeFuture().addListener(future -> {
+			System.out.println("Essa conexão foi fechada por causa disso!");
+			cause.printStackTrace();
+		});
+	}
+
+	private void route(FullHttpRequest request, ChannelHandlerContext ctx) {
 		Matcher matcher = PATTERN.matcher(request.uri());
 
 		if (matcher.find()) {
@@ -47,7 +53,7 @@ public class Router extends ChannelInboundHandlerAdapter {
 				handler = new GetHandler();
 
 			if (handler != null) {
-				ctx.pipeline().addLast(handler);
+				ctx.pipeline().addAfter("router", "processor", handler);
 				ctx.fireChannelRead(new EscribaRequest(config, store, collection, key, request));
 			} else {
 				// TODO: Exception?

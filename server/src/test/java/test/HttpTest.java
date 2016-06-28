@@ -1,21 +1,24 @@
 package test;
 
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.Unirest;
+
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.io.InputStream;
+
+import static java.lang.String.format;
 
 public interface HttpTest {
 
-	default void get(String url, RespondeHandler handler) throws IOException {
-		HttpURLConnection connection = (HttpURLConnection) new URL(String.format("http://%s", url)).openConnection();
-
-		connection.setRequestMethod("GET");
-		connection.connect();
-
-		handler.apply(connection);
+	default void get(String url, ResponseHandler handler) throws Exception {
+		handler.apply(Unirest.get(format("http://%s", url)).asBinary());
 	}
 
-	interface RespondeHandler {
-		void apply(HttpURLConnection connection) throws IOException;
+	default void put(String url, byte[] bytes, ResponseHandler handler) throws Exception {
+		handler.apply(Unirest.put(format("http://%s", url)).body(bytes).asBinary());
+	}
+
+	interface ResponseHandler {
+		void apply(HttpResponse<InputStream> response) throws IOException;
 	}
 }

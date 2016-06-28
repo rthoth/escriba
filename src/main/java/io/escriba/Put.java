@@ -8,6 +8,6 @@ public interface Put {
 	}
 
 	interface WrittenHandler {
-		void apply(int total, ByteBuffer buffer, Write write, Close close);
+		void apply(int total, ByteBuffer buffer, Write write, Close close) throws Exception;
 	}
 }
