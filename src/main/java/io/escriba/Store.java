@@ -31,11 +31,11 @@ public class Store {
 		this.dataDir = dataDir;
 	}
 
-	public Collection collection(String collectionName) throws IOException {
+	public Collection collection(String collectionName) throws Exception {
 		return collection(collectionName, false);
 	}
 
-	public Collection collection(String collectionName, boolean create) throws IOException {
+	public Collection collection(String collectionName, boolean create) throws Exception {
 		if (collections.containsKey(collectionName))
 			return collections.get(collectionName);
 

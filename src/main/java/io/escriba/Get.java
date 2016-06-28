@@ -8,6 +8,6 @@ public interface Get {
 	}
 
 	interface ReadyHandler {
-		void apply(Read read, Close close);
+		void apply(long size, Read read, Close close) throws Exception;
 	}
 }
