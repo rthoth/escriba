@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.Date;
 
 import static java.io.File.separator;
+import static java.lang.Integer.toHexString;
 
 public class DataEntry {
 
@@ -120,6 +121,6 @@ public class DataEntry {
 		int z = (int) (value / YX);
 		int y = (int) ((value % YX) / X);
 		int x = (int) (value % X);
-		return new StringBuilder().append(z).append(separator).append(y).append(separator).append(x).toString();
+		return new StringBuilder().append(toHexString(z)).append(separator).append(toHexString(y)).append(separator).append(toHexString(x)).toString();
 	}
 }

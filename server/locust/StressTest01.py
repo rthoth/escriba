@@ -57,14 +57,14 @@ class Getter(TaskSet):
 
 		print('Getting %s/%d' % (col, key))
 
-		with self.client.get('/%s/%d' % (col, key), catch_response=True, stream=True) as response:
-			if response.status_code == 200:
-				if response.content == sample:
-					response.success()
-				else:
-					response.failure('Ops!')
-			else:
-				response.failure('%d/%s' % (response.status_code, response.reason))
+		# with self.client.get('/%s/%d' % (col, key), catch_response=True, stream=True) as response:
+		# 	if response.status_code == 200:
+		# 		if response.content == sample:
+		# 			response.success()
+		# 		else:
+		# 			response.failure('Ops!')
+		# 	else:
+		# 		response.failure('%d/%s' % (response.status_code, response.reason))
 
 class Stree(HttpLocust):
 	task_set = Getter
