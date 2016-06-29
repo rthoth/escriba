@@ -2,16 +2,16 @@ package io.escriba.server;
 
 import io.escriba.Collection;
 import io.escriba.Store;
-import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpRequest;
 
-public class EscribaRequest {
+public class Request {
 	final String collectionName;
 	final Config config;
-	final FullHttpRequest httpRequest;
+	final HttpRequest httpRequest;
 	final String key;
 	final Store store;
 
-	public EscribaRequest(Config config, Store store, String collectionName, String key, FullHttpRequest request) {
+	public Request(Config config, Store store, String collectionName, String key, HttpRequest request) {
 		this.config = config;
 		this.store = store;
 		this.collectionName = collectionName;

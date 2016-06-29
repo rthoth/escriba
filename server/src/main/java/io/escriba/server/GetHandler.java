@@ -15,7 +15,7 @@ public class GetHandler extends ChannelInboundHandlerAdapter {
 
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-		EscribaRequest request = (EscribaRequest) msg;
+		Request request = (Request) msg;
 		channel = request.collection().getChannel(request.key);
 
 		if (channel != null) {

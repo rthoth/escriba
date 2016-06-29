@@ -4,8 +4,8 @@ import io.escriba.Store;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpRequest;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -25,8 +25,8 @@ public class Router extends ChannelInboundHandlerAdapter {
 
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-		if (msg instanceof FullHttpRequest)
-			this.route((FullHttpRequest) msg, ctx);
+		if (msg instanceof HttpRequest)
+			route((HttpRequest) msg, ctx);
 	}
 
 	@Override
@@ -37,7 +37,7 @@ public class Router extends ChannelInboundHandlerAdapter {
 		});
 	}
 
-	private void route(FullHttpRequest request, ChannelHandlerContext ctx) {
+	private void route(HttpRequest request, ChannelHandlerContext ctx) {
 		Matcher matcher = Router.PATTERN.matcher(request.uri());
 
 		if (matcher.find()) {
@@ -53,8 +53,13 @@ public class Router extends ChannelInboundHandlerAdapter {
 				handler = new GetHandler();
 
 			if (handler != null) {
-				ctx.pipeline().addAfter("router", "processor", handler);
-				ctx.fireChannelRead(new EscribaRequest(this.config, this.store, collection, key, request));
+
+				ctx.pipeline()
+					.addAfter("router", "processor", handler)
+					.remove("router")
+				;
+
+				ctx.fireChannelRead(new Request(this.config, this.store, collection, key, request));
 			} else {
 				// TODO: Exception?
 			}

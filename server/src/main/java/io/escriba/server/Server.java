@@ -9,7 +9,6 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 
@@ -77,8 +76,8 @@ public class Server {
 		protected void initChannel(NioSocketChannel ch) throws Exception {
 			ch.pipeline()
 				.addLast("httpDecoder", new HttpRequestDecoder())
-				.addLast("httpAggregator", new HttpObjectAggregator(MAX_SIZE))
 				.addLast("httpEncoder", new HttpResponseEncoder())
+//				.addLast("httpAggregator", new HttpObjectAggregator(MAX_SIZE))
 				.addLast("router", new Router(this.server.config, this.server.store))
 				.addLast("errorCatcher", new ErrorCatcher())
 			;
