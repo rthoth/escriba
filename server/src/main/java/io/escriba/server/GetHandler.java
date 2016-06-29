@@ -1,18 +1,17 @@
 package io.escriba.server;
 
+import io.escriba.DataChannel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.HttpChunkedInput;
 import io.netty.handler.stream.ChunkedNioStream;
 import io.netty.handler.stream.ChunkedWriteHandler;
 
-import java.nio.channels.FileChannel;
-
 import static io.netty.channel.ChannelFutureListener.CLOSE;
 
 public class GetHandler extends ChannelInboundHandlerAdapter {
 
-	private FileChannel channel = null;
+	private DataChannel channel;
 
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -23,7 +22,7 @@ public class GetHandler extends ChannelInboundHandlerAdapter {
 			Http.response(ctx, Http.chunked(Http.ok("application/octet-stream")));
 
 			ctx.pipeline().addBefore("processor", "chuncked", new ChunkedWriteHandler());
-			ctx.writeAndFlush(new HttpChunkedInput(new ChunkedNioStream(channel, 500 * 1024)))
+			ctx.writeAndFlush(new HttpChunkedInput(new ChunkedNioStream(this.channel, 500 * 1024)))
 				.addListener(future -> {
 					channel.close();
 				})

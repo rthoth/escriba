@@ -4,30 +4,30 @@ import io.escriba.functional.Callback0;
 
 public class Wait {
 
-	private Throwable fail = null;
+	private Throwable fail;
 	private boolean wait = true;
 
 	public void attempt(Callback0 block) {
 		try {
 			block.apply();
 		} catch (Throwable e) {
-			fail = e;
+			this.fail = e;
 		}
 	}
 
 	public void free() {
-		wait = false;
+		this.wait = false;
 	}
 
 	public void sleep() {
-		while (wait && fail == null) {
+		while (this.wait && this.fail == null) {
 			try {
 				Thread.sleep(50);
 			} catch (InterruptedException e) {
 			}
 		}
 
-		if (fail != null)
-			throw new RuntimeException(fail);
+		if (this.fail != null)
+			throw new RuntimeException(this.fail);
 	}
 }

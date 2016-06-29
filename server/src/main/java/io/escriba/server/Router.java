@@ -26,7 +26,7 @@ public class Router extends ChannelInboundHandlerAdapter {
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 		if (msg instanceof FullHttpRequest)
-			route((FullHttpRequest) msg, ctx);
+			this.route((FullHttpRequest) msg, ctx);
 	}
 
 	@Override
@@ -38,7 +38,7 @@ public class Router extends ChannelInboundHandlerAdapter {
 	}
 
 	private void route(FullHttpRequest request, ChannelHandlerContext ctx) {
-		Matcher matcher = PATTERN.matcher(request.uri());
+		Matcher matcher = Router.PATTERN.matcher(request.uri());
 
 		if (matcher.find()) {
 			String collection = matcher.group(1);
@@ -54,7 +54,7 @@ public class Router extends ChannelInboundHandlerAdapter {
 
 			if (handler != null) {
 				ctx.pipeline().addAfter("router", "processor", handler);
-				ctx.fireChannelRead(new EscribaRequest(config, store, collection, key, request));
+				ctx.fireChannelRead(new EscribaRequest(this.config, this.store, collection, key, request));
 			} else {
 				// TODO: Exception?
 			}

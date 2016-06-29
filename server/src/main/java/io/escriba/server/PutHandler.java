@@ -1,11 +1,11 @@
 package io.escriba.server;
 
+import io.escriba.DataEntry;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.FullHttpRequest;
-
-import static java.lang.String.format;
+import io.netty.handler.codec.http.HttpHeaderNames;
 
 public class PutHandler extends ChannelInboundHandlerAdapter {
 
@@ -15,24 +15,26 @@ public class PutHandler extends ChannelInboundHandlerAdapter {
 
 		FullHttpRequest httpRequest = request.httpRequest;
 		ByteBuf content = httpRequest.content();
-		final int length = httpRequest.content().readableBytes();
-		final long[] pos = {0L};
 
-		request.collection().put(request.key,
-			(write, close) -> {
-				write.apply(content.nioBuffer(), pos[0]);
-			},
-			(total, buffer, write, close) -> {
-				pos[0] += total;
-				if (pos[0] < length) {
-					write.apply(content.nioBuffer(), pos[0]);
-				} else {
+		String mediaType = httpRequest.headers().get(HttpHeaderNames.CONTENT_TYPE);
+		if (mediaType == null)
+			mediaType = DataEntry.DEFAULT_MEDIA_TYPE;
+
+		request.collection().put(request.key, mediaType)
+			.ready((write, close) -> {
+				write.apply(content.nioBuffer(), 0L);
+			})
+			.written((total, last, write, close) -> {
+				if (total < content.readableBytes())
+					write.apply(content.nioBuffer((int) total, (int) (content.readableBytes() - total)), total);
+				else {
 					close.apply();
-					Http.responseAndClose(ctx, Http.created(format("%s/%s", request.collectionName, request.key)));
+					Http.responseAndClose(ctx, Http.created(request.collectionName + "/" + request.key));
 				}
-			},
-			throwable -> {
-				ctx.fireExceptionCaught(throwable);
-			});
+			})
+			.error(throwable -> {
+				// TODO:
+			})
+			.async();
 	}
 }

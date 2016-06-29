@@ -1,93 +1,78 @@
 package io.escriba.hash;
 
 import io.escriba.*;
+import io.escriba.EscribaException.IllegalState;
 import org.mapdb.Atomic;
+import org.mapdb.DB;
 import org.mapdb.HTreeMap;
+import org.mapdb.Serializer;
 
 import java.io.File;
-import java.nio.channels.FileChannel;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
-import static java.io.File.separator;
-import static java.lang.Integer.toHexString;
-
+/**
+ * HashCollection uses HTreeMap.
+ */
 public class HashCollection implements Collection {
-	public static final double X = 1e3;
-	public static final double XY = 1e6;
 	private final Atomic.Long atomic;
-	private final File diretory;
-	final HTreeMap<String, Data> map;
+	private final DB db;
+	private final File directory;
+	final HTreeMap<String, DataEntry> map;
 	final String name;
 
-	public HashCollection(String name, HTreeMap<String, Data> map, File directory, Atomic.Long atomic) {
+	public HashCollection(String name, DB db, File directory) {
+
+		map = db.hashMap(name, Serializer.STRING, DataEntry.SERIALIZER).createOrOpen();
+
 		this.name = name;
-		this.map = map;
-		this.diretory = directory;
-		this.atomic = atomic;
+		this.directory = directory;
+		this.db = db;
 
-		if (!directory.exists())
-			directory.mkdirs();
+		this.atomic = db.atomicLong(name + ".nextID").createOrOpen();
 	}
 
 	@Override
-	public Get get(String key, Get.ReadyHandler readyHandler, Get.ReadHandler readHandler) throws Exception {
-		return new AsyncGet(this, key, readyHandler, readHandler, null);
+	public DataChannel getChannel(String key) {
+		if (this.map.containsKey(key)) {
+			DataEntry entry = this.map.get(key);
+
+			if (entry.status != DataEntry.Status.Ok)
+				throw new IllegalState(key + " in collection!");
+
+			return new FileDataChannel(entry, this.directory);
+		}
+		return null;
 	}
 
-	@Override
-	public Get get(String key, Get.ReadyHandler readyHandler, Get.ReadHandler readHandler, ErrorHandler errorHandler) throws Exception {
-		return new AsyncGet(this, key, readyHandler, readHandler, errorHandler);
-	}
+	DataEntry getOrCreateEntry(String key) {
 
-	@Override
-	public FileChannel getChannel(String key) throws Exception {
-		return FileChannel.open(getFile(key).toPath(), StandardOpenOption.READ);
-	}
+		DataEntry entry = map.get(key);
 
-	File getFile(String key) {
-		Data data = map.get(key);
-
-		if (data == null) {
-			data = new Data(nextPath());
-			map.put(key, data);
+		if (entry == null) {
+			entry = new DataEntry().path(nextPath());
+			map.put(key, entry);
 		}
 
-		switch (data.status) {
-			case Deleting:
-				new File(diretory, data.path).delete();
-				data = data.path(nextPath()).status(Data.Status.Updating);
-				map.put(key, data);
-				break;
-		}
-
-		File file = new File(diretory, data.path);
-		File parent = file.getParentFile();
-		if (!parent.exists())
-			parent.mkdirs();
-
-		return file;
+		return entry;
 	}
 
-	private String nextPath() {
-		long next;
+	Path getPath(DataEntry entry) {
+		return Paths.get(directory.getAbsolutePath(), entry.path);
+	}
+
+	String nextPath() {
 		synchronized (atomic) {
-			next = atomic.getAndIncrement();
+			return DataEntry.zyx(atomic.getAndIncrement());
 		}
-
-		int z = (int) (next / XY);
-		int y = (int) ((next % XY) / X);
-		int x = (int) (next % X);
-
-		return toHexString(x) + separator + toHexString(y) + separator + toHexString(z);
 	}
 
 	@Override
-	public Put put(String key, Put.ReadyHandler readyHandler, Put.WrittenHandler writtenHandler) throws Exception {
-		return new AsyncPut(this, key, readyHandler, writtenHandler, null);
+	public Putter put(String key, String mediaType) {
+		return new HashPutter(this, key, mediaType);
 	}
 
-	@Override
-	public Put put(String key, Put.ReadyHandler readyHandler, Put.WrittenHandler writtenHandler, ErrorHandler errorHandler) throws Exception {
-		return new AsyncPut(this, key, readyHandler, writtenHandler, errorHandler);
+	void update(String key, DataEntry entry) {
+		map.put(key, entry);
 	}
 }

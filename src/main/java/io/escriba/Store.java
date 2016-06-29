@@ -1,8 +1,10 @@
 package io.escriba;
 
+import io.escriba.EscribaException.NotFound;
+import io.escriba.EscribaException.Unexpected;
 import io.escriba.hash.HashCollection;
-import org.jetbrains.annotations.NotNull;
-import org.mapdb.*;
+import org.mapdb.DB;
+import org.mapdb.DBMaker;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,73 +13,56 @@ import java.util.zip.CRC32;
 
 public class Store {
 
+	private final File baseDir;
 	private final WeakHashMap<String, HashCollection> collections = new WeakHashMap<>();
-	private final File dataDir;
 	private final DB db;
 
-	public Store(File mapDBFile, File dataDir) {
-		db = DBMaker.fileDB(mapDBFile)
+	public Store(File mapDBFile, File baseDir) {
+		this.db = DBMaker.fileDB(mapDBFile)
 			.transactionEnable()
 			.make();
 
-		this.dataDir = dataDir;
+		this.baseDir = baseDir;
 	}
 
-	public Store(File dataDir) {
-		db = DBMaker.memoryDB()
+	public Store(File baseDir) {
+		this.db = DBMaker.memoryDB()
 			.transactionEnable()
 			.make();
 
-		this.dataDir = dataDir;
-	}
-
-	public Collection collection(String collectionName) throws Exception {
-		return collection(collectionName, false);
+		this.baseDir = baseDir;
 	}
 
 	public Collection collection(String collectionName, boolean create) throws Exception {
-		if (collections.containsKey(collectionName))
-			return collections.get(collectionName);
+		if (this.collections.containsKey(collectionName))
+			return this.collections.get(collectionName);
 
 		synchronized (this) {
-			if (collections.containsKey(collectionName))
-				return collections.get(collectionName);
+			if (this.collections.containsKey(collectionName))
+				return this.collections.get(collectionName);
 
-			if (!db.exists(collectionName)) {
-				if (create) {
-
-					HTreeMap<String, Data> map = db.hashMap(collectionName, Serializer.STRING, Data.SERIALIZER).create();
-					Atomic.Long atomic = db.atomicLong("atomic." + collectionName).create();
-					collections.put(collectionName, new HashCollection(collectionName, map, getCollectionDataDir(collectionName), atomic));
-
-				} else
-					throw new IllegalStateException("Can't create " + collectionName + " collection!");
-			} else {
-
-				HTreeMap<String, Data> map = db.hashMap(collectionName, Serializer.STRING, Data.SERIALIZER).open();
-				Atomic.Long atomic = db.atomicLong("atomic." + collectionName).open();
-				collections.put(collectionName, new HashCollection(collectionName, map, getCollectionDataDir(collectionName), atomic));
-
-			}
-
-			return collections.get(collectionName);
+			if (create || this.db.exists(collectionName))
+				try {
+					this.collections.put(collectionName, new HashCollection(collectionName, this.db, this.directoryOf(collectionName)));
+				} catch (Exception e) {
+					throw new Unexpected("Impossible create collection " + collectionName, e);
+				}
+			else
+				throw new NotFound("Collection " + collectionName);
 		}
+
+		return this.collections.get(collectionName);
 	}
 
-	public static String collectionDirName(String collectionName) {
+	public static String directoryNameOf(String collectionName) {
 		CRC32 crc32 = new CRC32();
 		crc32.update(collectionName.getBytes());
 		return Long.toString(crc32.getValue(), 32);
 	}
 
-	@NotNull
-	private File getCollectionDataDir(String collectionName) throws IOException {
-		File collectionDir = new File(dataDir, collectionDirName(collectionName));
-		try {
-			collectionDir.mkdirs();
-		} catch (Exception e) {
-			throw new IOException("Impossible create " + collectionName + " collection!", e);
-		}
+	private File directoryOf(String collectionName) {
+		File collectionDir = new File(this.baseDir, Store.directoryNameOf(collectionName));
+		collectionDir.mkdirs();
 		return collectionDir;
 	}
 

@@ -5,6 +5,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -16,11 +17,11 @@ import java.net.InetSocketAddress;
 
 public class Server {
 
-	final static int MAX_SIZE = 1 * 1024 * 1024 * 1024;
+	static final int MAX_SIZE = 1 * 1024 * 1024 * 1024;
 
 	private final ServerBootstrap bootstrap;
 	private final Config config;
-	private final io.netty.channel.EventLoopGroup dispatchGroup;
+	private final EventLoopGroup dispatchGroup;
 	private final Store store;
 	private final NioEventLoopGroup workGroup;
 
@@ -28,13 +29,13 @@ public class Server {
 		this.config = config;
 		this.store = store;
 
-		bootstrap = new ServerBootstrap();
-		dispatchGroup = new NioEventLoopGroup(config.dispatchers);
-		workGroup = new NioEventLoopGroup(config.workers);
+		this.bootstrap = new ServerBootstrap();
+		this.dispatchGroup = new NioEventLoopGroup(config.dispatchers);
+		this.workGroup = new NioEventLoopGroup(config.workers);
 
-		bootstrap.group(dispatchGroup, workGroup)
+		this.bootstrap.group(this.dispatchGroup, this.workGroup)
 			.channel(NioServerSocketChannel.class)
-			.childHandler(new Initializer(this))
+			.childHandler(new Server.Initializer(this))
 			.childOption(ChannelOption.SO_KEEPALIVE, true)
 			.childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
 			.childOption(ChannelOption.WRITE_SPIN_COUNT, 1)
@@ -47,7 +48,7 @@ public class Server {
 			ChannelFuture future = null;
 			try {
 				// Start bind here!
-				future = bootstrap.bind(address).sync();
+				future = this.bootstrap.bind(address).sync();
 			} catch (InterruptedException e) {
 				// TODO: What to do?
 				e.printStackTrace();
@@ -76,9 +77,9 @@ public class Server {
 		protected void initChannel(NioSocketChannel ch) throws Exception {
 			ch.pipeline()
 				.addLast("httpDecoder", new HttpRequestDecoder())
-				.addLast("httpAggregator", new HttpObjectAggregator(Server.MAX_SIZE))
+				.addLast("httpAggregator", new HttpObjectAggregator(MAX_SIZE))
 				.addLast("httpEncoder", new HttpResponseEncoder())
-				.addLast("router", new Router(server.config, server.store))
+				.addLast("router", new Router(this.server.config, this.server.store))
 				.addLast("errorCatcher", new ErrorCatcher())
 			;
 		}

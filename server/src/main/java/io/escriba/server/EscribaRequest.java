@@ -16,10 +16,10 @@ public class EscribaRequest {
 		this.store = store;
 		this.collectionName = collectionName;
 		this.key = key;
-		this.httpRequest = request;
+		httpRequest = request;
 	}
 
 	public Collection collection() throws Exception {
-		return store.collection(collectionName, true);
+		return this.store.collection(this.collectionName, true);
 	}
 }

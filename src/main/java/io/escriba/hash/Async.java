@@ -22,18 +22,18 @@ public interface Async {
 
 	default void close(boolean callError) {
 		try {
-			AsynchronousFileChannel channel = getChannel();
+			AsynchronousFileChannel channel = this.getChannel();
 			if (channel != null && channel.isOpen()) {
-				FileLock lock = getLock();
+				FileLock lock = this.getLock();
 				if (lock != null)
 					lock.close();
 
-				getChannel().close();
+				this.getChannel().close();
 			}
 		} catch (Exception e) {
-			if (callError && getErrorHandler() != null)
+			if (callError && this.getErrorHandler() != null)
 				try {
-					getErrorHandler().apply(e);
+					this.getErrorHandler().apply(e);
 				} catch (Exception e1) {
 					// TODO: Log?
 				}
@@ -41,9 +41,9 @@ public interface Async {
 	}
 
 	default void error(Throwable throwable) {
-		close(false);
-		if (isOpen()) {
-			ErrorHandler handler = getErrorHandler();
+		this.close(false);
+		if (this.isOpen()) {
+			ErrorHandler handler = this.getErrorHandler();
 			if (handler != null)
 				try {
 					handler.apply(throwable);
@@ -61,7 +61,7 @@ public interface Async {
 
 	default boolean isOpen() {
 		try {
-			return getChannel().isOpen();
+			return this.getChannel().isOpen();
 		} catch (Exception e) {
 			// TODO: Log?
 			return false;
@@ -69,7 +69,7 @@ public interface Async {
 	}
 
 	default void lock() throws Exception {
-		getChannel().lock(this, LOCK_HANDLER);
+		this.getChannel().lock(this, Async.LOCK_HANDLER);
 	}
 
 	void locked(FileLock lock);

@@ -1,6 +1,7 @@
 package io.escriba.server;
 
 import io.escriba.EscribaException;
+import io.escriba.EscribaException.NoValue;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -22,16 +23,16 @@ public class ErrorCatcher extends ChannelInboundHandlerAdapter {
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
 		HttpObject response = null;
 
-		if (cause instanceof EscribaException.NoValue)
-			response = noValue(ctx, (EscribaException.NoValue) cause);
+		if (cause instanceof NoValue)
+			response = this.noValue(ctx, (NoValue) cause);
 		else
-			response = internalError(ctx, cause);
+			response = this.internalError(ctx, cause);
 
 		ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
 	}
 
 	private DefaultFullHttpResponse internalError(ChannelHandlerContext ctx, Throwable throwable) {
-		DefaultFullHttpResponse response = createResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR, throwable.getMessage());
+		DefaultFullHttpResponse response = ErrorCatcher.createResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR, throwable.getMessage());
 
 		StringBuilder sb = new StringBuilder();
 
@@ -48,8 +49,8 @@ public class ErrorCatcher extends ChannelInboundHandlerAdapter {
 		return response;
 	}
 
-	private DefaultFullHttpResponse noValue(ChannelHandlerContext ctx, EscribaException.NoValue noValueExc) {
-		DefaultFullHttpResponse response = createResponse(HttpResponseStatus.NOT_FOUND, noValueExc.getMessage());
+	private DefaultFullHttpResponse noValue(ChannelHandlerContext ctx, NoValue noValueExc) {
+		DefaultFullHttpResponse response = ErrorCatcher.createResponse(HttpResponseStatus.NOT_FOUND, noValueExc.getMessage());
 		return response;
 	}
 }
