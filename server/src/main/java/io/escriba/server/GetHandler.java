@@ -18,17 +18,21 @@ public class GetHandler extends ChannelInboundHandlerAdapter {
 		EscribaRequest request = (EscribaRequest) msg;
 		channel = request.collection().getChannel(request.key);
 
-		if (channel.size() > 0) {
-			Http.response(ctx, Http.chunked(Http.ok("application/octet-stream")));
+		if (channel != null) {
+			if (channel.size() > 0) {
+				Http.response(ctx, Http.chunked(Http.ok("application/octet-stream")));
 
-			ctx.pipeline().addBefore("processor", "chuncked", new ChunkedWriteHandler());
-			ctx.writeAndFlush(new HttpChunkedInput(new ChunkedNioStream(this.channel, 500 * 1024)))
-				.addListener(future -> {
-					channel.close();
-				})
-				.addListener(CLOSE);
+				ctx.pipeline().addBefore("processor", "chuncked", new ChunkedWriteHandler());
+				ctx.writeAndFlush(new HttpChunkedInput(new ChunkedNioStream(this.channel, 500 * 1024)))
+					.addListener(future -> {
+						channel.close();
+					})
+					.addListener(CLOSE);
+			} else {
+				Http.responseAndClose(ctx, Http.noContent(request.collectionName + "/" + request.key));
+			}
 		} else {
-			Http.responseAndClose(ctx, Http.noContent(request.collectionName + "/" + request.key));
+			Http.responseAndClose(ctx, Http.notFound(request.collectionName + "/" + request.key));
 		}
 	}
 

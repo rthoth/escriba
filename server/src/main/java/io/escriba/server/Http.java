@@ -21,6 +21,10 @@ public class Http {
 		return new DefaultHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(NO_CONTENT.code(), message));
 	}
 
+	public static HttpResponse notFound(String message) {
+		return new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(NOT_FOUND.code(), message));
+	}
+
 	public static HttpResponse ok(String contenType) {
 		DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, OK);
 		response.headers().set(CONTENT_TYPE, contenType);

@@ -29,11 +29,13 @@ public class PutHandler extends ChannelInboundHandlerAdapter {
 					write.apply(content.nioBuffer((int) total, (int) (content.readableBytes() - total)), total);
 				else {
 					close.apply();
+					httpRequest.content().release();
 					Http.responseAndClose(ctx, Http.created(request.collectionName + "/" + request.key));
 				}
 			})
 			.error(throwable -> {
-				// TODO:
+				// TODO: What to do?
+				httpRequest.content().release();
 			})
 			.async();
 	}
