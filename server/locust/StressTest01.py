@@ -10,24 +10,40 @@ def next_collection():
 	global colls_limit, colls;
 	return colls[randint(0, colls_limit)]
 
-max_keys = 20e9
+current_key = 0
 def next_key():
-	global max_keys
-	return randint(0, max_keys)
+	global current_key
+	key = current_key
+	current_key = (current_key + 1) % 1e5
+	return key
 
-print('Creating data samples...')
 samples = []
-for d in range(0, 5):
-		kb = 1024
-		mb = kb * kb
-		size = randint(500 * kb,  20 * mb)
-		print('Creating sample %d with %d bytes' % (d, size))
-		buf = bytearray()
-		for i in range(0, size):
-			buf.append(randint(1, 255))
-		samples.append(buf)
+kb = 1024
+mb = kb * kb
+smin = 10 * mb
+smax = 20 * mb
+num_samples = 10
+slicee = (smax - smin) / num_samples
+
+print('Creating bigdata [%d, %d]...' % (smin, smax))
+
+big = bytearray()
+for i in range(0, smax):
+	big.append(randint(65, 90))
+
+print('Creating %d samples...' % num_samples)
+
+for i in range(0, num_samples - 1):
+	l = smin + i * slicee
+	samples.append(buffer(big, 0, l))
+
+samples.append(buffer(big));
+
+for sample in samples:
+	print('Sample with %d bytes' % len(sample))
 
 samples_limit = len(samples) - 1
+
 def next_sample():
 	global samples
 	return samples[randint(0, samples_limit)]
@@ -57,14 +73,14 @@ class Getter(TaskSet):
 
 		print('Getting %s/%d' % (col, key))
 
-		# with self.client.get('/%s/%d' % (col, key), catch_response=True, stream=True) as response:
-		# 	if response.status_code == 200:
-		# 		if response.content == sample:
-		# 			response.success()
-		# 		else:
-		# 			response.failure('Ops!')
-		# 	else:
-		# 		response.failure('%d/%s' % (response.status_code, response.reason))
+		with self.client.get('/%s/%d' % (col, key), catch_response=True, stream=True) as response:
+			if response.status_code == 200:
+				if buffer(response.content) == sample:
+					response.success()
+				else:
+					response.failure('Ops! expected %d bytes equal to %d bytes' % (len(sample), len(response.content)))
+			else:
+				response.failure('%d/%s' % (response.status_code, response.reason))
 
 class Stree(HttpLocust):
 	task_set = Getter
