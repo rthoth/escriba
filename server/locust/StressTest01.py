@@ -10,17 +10,19 @@ def next_collection():
 	global colls_limit, colls;
 	return colls[randint(0, colls_limit)]
 
-max_keys = 20e9
+current_key = 0
 def next_key():
-	global max_keys
-	return randint(0, max_keys)
+	global current_key
+	key = current_key
+	current_key = (current_key + 1) % 1e5
+	return key
 
 samples = []
 kb = 1024
 mb = kb * kb
-smin = kb
+smin = 10 * mb
 smax = 20 * mb
-num_samples = kb
+num_samples = 10
 slicee = (smax - smin) / num_samples
 
 print('Creating bigdata [%d, %d]...' % (smin, smax))
