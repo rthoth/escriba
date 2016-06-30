@@ -24,7 +24,7 @@ public class GetTest implements Tester, HttpTest {
 
 	@Test(groups = "put")
 	public void t00() throws Exception {
-		this.put("localhost:12345/col/val", "Some data where!".getBytes(), response -> {
+		put("localhost:12345/col/val", "Some data where!".getBytes(), response -> {
 			assertThat(response.getStatus()).isEqualTo(201);
 			assertThat(response.getStatusText()).isEqualTo("col/val");
 		});
@@ -33,7 +33,7 @@ public class GetTest implements Tester, HttpTest {
 
 	@Test(dependsOnGroups = "put")
 	public void t01() throws Exception {
-		this.get("localhost:12345/col/val", response -> {
+		get("localhost:12345/col/val", response -> {
 			assertThat(response.getStatus()).isEqualTo(200);
 			assertThat(IOUtils.toString(response.getBody(), "utf8")).isEqualTo("Some data where!");
 		});

@@ -20,7 +20,7 @@ samples = []
 for d in range(0, 5):
 		kb = 1024
 		mb = kb * kb
-		size = randint(500 * kb,  20 * mb)
+		size = randint(1 * mb,  20 * mb)
 		print('Creating sample %d with %d bytes' % (d, size))
 		buf = bytearray()
 		for i in range(0, size):
@@ -57,14 +57,14 @@ class Getter(TaskSet):
 
 		print('Getting %s/%d' % (col, key))
 
-		# with self.client.get('/%s/%d' % (col, key), catch_response=True, stream=True) as response:
-		# 	if response.status_code == 200:
-		# 		if response.content == sample:
-		# 			response.success()
-		# 		else:
-		# 			response.failure('Ops!')
-		# 	else:
-		# 		response.failure('%d/%s' % (response.status_code, response.reason))
+		with self.client.get('/%s/%d' % (col, key), catch_response=True, stream=True) as response:
+			if response.status_code == 200:
+				if response.content == sample:
+					response.success()
+				else:
+					response.failure('Ops!')
+			else:
+				response.failure('%d/%s' % (response.status_code, response.reason))
 
 class Stree(HttpLocust):
 	task_set = Getter
