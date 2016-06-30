@@ -47,11 +47,6 @@ public class PutHandlerWorker extends ChannelInboundHandlerAdapter {
 
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-		if (compositeBuffer == null) {
-			compositeBuffer = ctx.alloc().compositeBuffer(MAX_FRAMES);
-			this.ctx = ctx;
-		}
-
 		if (msg instanceof HttpContent) {
 			if (!(msg instanceof LastHttpContent)) {
 				lockedBlock.locked(() -> addContent((HttpContent) msg));
@@ -89,6 +84,12 @@ public class PutHandlerWorker extends ChannelInboundHandlerAdapter {
 				}
 		}
 
+	}
+
+	@Override
+	public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+		compositeBuffer = ctx.alloc().compositeDirectBuffer(MAX_FRAMES);
+		this.ctx = ctx;
 	}
 
 	private void onError(Throwable throwable) throws Exception {

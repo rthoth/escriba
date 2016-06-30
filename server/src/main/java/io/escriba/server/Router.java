@@ -14,7 +14,6 @@ public class Router extends ChannelInboundHandlerAdapter {
 
 	private static final Pattern PATTERN = Pattern.compile("^/([0-9a-z]+)/([0-9a-z]+)$", Pattern.CASE_INSENSITIVE);
 
-	private static final String POST = "POST";
 	private final Config config;
 	private final Store store;
 

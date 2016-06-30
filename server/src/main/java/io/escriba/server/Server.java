@@ -16,8 +16,6 @@ import java.net.InetSocketAddress;
 
 public class Server {
 
-	static final int MAX_SIZE = 1 * 1024 * 1024 * 1024;
-
 	private final ServerBootstrap bootstrap;
 	private final Config config;
 	private final EventLoopGroup dispatchGroup;
@@ -77,7 +75,6 @@ public class Server {
 			ch.pipeline()
 				.addLast("httpDecoder", new HttpRequestDecoder())
 				.addLast("httpEncoder", new HttpResponseEncoder())
-//				.addLast("httpAggregator", new HttpObjectAggregator(MAX_SIZE))
 				.addLast("router", new Router(this.server.config, this.server.store))
 				.addLast("errorCatcher", new ErrorCatcher())
 			;

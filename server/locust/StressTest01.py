@@ -20,8 +20,8 @@ def next_key():
 samples = []
 kb = 1024
 mb = kb * kb
-smin = 10 * mb
-smax = 20 * mb
+smin = 1 * kb
+smax = 2 * kb
 num_samples = 10
 slicee = (smax - smin) / num_samples
 
@@ -84,5 +84,5 @@ class Getter(TaskSet):
 
 class Stree(HttpLocust):
 	task_set = Getter
-	max_wait = 10000
+	max_wait = 1000
 	min_wait = 10
