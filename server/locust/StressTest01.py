@@ -15,19 +15,33 @@ def next_key():
 	global max_keys
 	return randint(0, max_keys)
 
-print('Creating data samples...')
 samples = []
-for d in range(0, 5):
-		kb = 1024
-		mb = kb * kb
-		size = randint(1 * mb,  20 * mb)
-		print('Creating sample %d with %d bytes' % (d, size))
-		buf = bytearray()
-		for i in range(0, size):
-			buf.append(randint(1, 255))
-		samples.append(buf)
+kb = 1024
+mb = kb * kb
+smin = kb
+smax = 20 * mb
+num_samples = kb
+slicee = (smax - smin) / num_samples
+
+print('Creating bigdata [%d, %d]...' % (smin, smax))
+
+big = bytearray()
+for i in range(0, smax):
+	big.append(randint(65, 90))
+
+print('Creating %d samples...' % num_samples)
+
+for i in range(0, num_samples - 1):
+	l = smin + i * slicee
+	samples.append(buffer(big, 0, l))
+
+samples.append(buffer(big));
+
+for sample in samples:
+	print('Sample with %d bytes' % len(sample))
 
 samples_limit = len(samples) - 1
+
 def next_sample():
 	global samples
 	return samples[randint(0, samples_limit)]
@@ -59,10 +73,10 @@ class Getter(TaskSet):
 
 		with self.client.get('/%s/%d' % (col, key), catch_response=True, stream=True) as response:
 			if response.status_code == 200:
-				if response.content == sample:
+				if buffer(response.content) == sample:
 					response.success()
 				else:
-					response.failure('Ops!')
+					response.failure('Ops! expected %d bytes equal to %d bytes' % (len(sample), len(response.content)))
 			else:
 				response.failure('%d/%s' % (response.status_code, response.reason))
 

@@ -15,7 +15,7 @@ import io.netty.handler.codec.http.LastHttpContent;
 import static java.lang.Math.min;
 
 public class PutHandlerWorker extends ChannelInboundHandlerAdapter {
-	private static final int LIMIT = 1024 * 512;
+	private static final int LIMIT = 1024 * 64;
 	private static final int MAX_FRAMES = 1024 * 512;
 	private final ByteBufAllocator allocator = new PooledByteBufAllocator();
 	private Close close;
