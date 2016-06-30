@@ -14,8 +14,13 @@ import java.io.IOException;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.channels.FileLock;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
 
 public class AsyncPut implements Close {
 
@@ -42,13 +47,22 @@ public class AsyncPut implements Close {
 			asyncPut.error(throwable);
 		}
 	};
+
+	private static Set<OpenOption> OPEN_OPTIONS;
+
+	static {
+		Set<OpenOption> options = new HashSet<>();
+		options.add(StandardOpenOption.CREATE);
+		options.add(StandardOpenOption.WRITE);
+		OPEN_OPTIONS = Collections.unmodifiableSet(options);
+	}
+
 	private final AsynchronousFileChannel channel;
 	private final HashCollection collection;
 	private DataEntry entry;
 	private final ErrorHandler errorHandler;
 	private final String key;
 	private FileLock lock = null;
-	private final String mediaType;
 	private final ReadyHandler readyHandler;
 	private long total = 0;
 	private Write write;
@@ -57,7 +71,6 @@ public class AsyncPut implements Close {
 	public AsyncPut(HashCollection collection, String key, String mediaType, ReadyHandler readyHandler, WrittenHandler writtenHandler, ErrorHandler errorHandler) {
 		this.collection = collection;
 		this.key = key;
-		this.mediaType = mediaType;
 		this.readyHandler = readyHandler;
 		this.writtenHandler = writtenHandler;
 		this.errorHandler = errorHandler;
@@ -81,7 +94,13 @@ public class AsyncPut implements Close {
 				throw new Unexpected(e);
 			}
 		try {
-			channel = AsynchronousFileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+			ExecutorService executorService = collection.executorService;
+
+			if (executorService == null)
+				channel = AsynchronousFileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+			else
+				channel = AsynchronousFileChannel.open(path, OPEN_OPTIONS, executorService);
+
 		} catch (IOException e) {
 			throw new Unexpected("Impossible open channel to put " + key + " in collection " + collection.name, e);
 		}

@@ -10,6 +10,7 @@ import org.mapdb.Serializer;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.ExecutorService;
 
 /**
  * HashCollection uses HTreeMap.
@@ -18,16 +19,18 @@ public class HashCollection implements Collection {
 	private final Atomic.Long atomic;
 	private final DB db;
 	private final File directory;
+	final ExecutorService executorService;
 	final HTreeMap<String, DataEntry> map;
 	final String name;
 
-	public HashCollection(String name, DB db, File directory) {
+	public HashCollection(String name, DB db, File directory, ExecutorService executorService) {
 
 		map = db.hashMap(name, Serializer.STRING, DataEntry.SERIALIZER).createOrOpen();
 
 		this.name = name;
 		this.directory = directory;
 		this.db = db;
+		this.executorService = executorService;
 
 		this.atomic = db.atomicLong(name + ".nextID").createOrOpen();
 	}

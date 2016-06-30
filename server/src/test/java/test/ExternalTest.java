@@ -12,7 +12,7 @@ public class ExternalTest implements Tester {
 
 	@Test(timeOut = timeout)
 	public void start() throws InterruptedException {
-		Store store = new Store(newFile("mapdb"), newDir("data"));
+		Store store = new Store(newFile("mapdb"), newDir("data"), 20);
 		Config config = new Config(2, 6);
 		Server server = new Server(config, store);
 

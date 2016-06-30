@@ -20,9 +20,9 @@ public class GetHandler extends ChannelInboundHandlerAdapter {
 
 		if (channel != null) {
 			if (channel.size() > 0) {
-				Http.response(ctx, Http.chunked(Http.ok("application/octet-stream")));
+				Http.response(ctx, Http.chunked(Http.ok(channel.mediaType())));
 
-				ctx.pipeline().addBefore("processor", "chuncked", new ChunkedWriteHandler());
+				ctx.pipeline().addBefore("processor", "chunckedWriter", new ChunkedWriteHandler());
 				ctx.writeAndFlush(new HttpChunkedInput(new ChunkedNioStream(this.channel, 500 * 1024)))
 					.addListener(future -> {
 						channel.close();

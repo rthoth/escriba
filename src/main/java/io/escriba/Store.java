@@ -7,8 +7,9 @@ import org.mapdb.DB;
 import org.mapdb.DBMaker;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.WeakHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.zip.CRC32;
 
 public class Store {
@@ -16,21 +17,23 @@ public class Store {
 	private final File baseDir;
 	private final WeakHashMap<String, HashCollection> collections = new WeakHashMap<>();
 	private final DB db;
+	final ExecutorService executorService;
 
-	public Store(File mapDBFile, File baseDir) {
+	public Store(File mapDBFile, File baseDir, int threads) {
 		this.db = DBMaker.fileDB(mapDBFile)
 			.transactionEnable()
 			.make();
 
 		this.baseDir = baseDir;
+
+		if (threads > 0)
+			executorService = Executors.newWorkStealingPool(threads);
+		else
+			executorService = null;
 	}
 
-	public Store(File baseDir) {
-		this.db = DBMaker.memoryDB()
-			.transactionEnable()
-			.make();
-
-		this.baseDir = baseDir;
+	public Store(File mapDBFile, File baseDir) {
+		this(mapDBFile, baseDir, 0);
 	}
 
 	public Collection collection(String collectionName, boolean create) throws Exception {
@@ -43,7 +46,7 @@ public class Store {
 
 			if (create || this.db.exists(collectionName))
 				try {
-					this.collections.put(collectionName, new HashCollection(collectionName, this.db, this.directoryOf(collectionName)));
+					this.collections.put(collectionName, new HashCollection(collectionName, this.db, this.directoryOf(collectionName), executorService));
 				} catch (Exception e) {
 					throw new Unexpected("Impossible create collection " + collectionName, e);
 				}
