@@ -2,11 +2,11 @@ package io.escriba;
 
 public interface Putter {
 
-	void async();
-
 	Putter error(ErrorHandler errorHandler);
 
 	Putter ready(ReadyHandler readyHandler);
+
+	void start();
 
 	Putter written(WrittenHandler writtenHandler);
 

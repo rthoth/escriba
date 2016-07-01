@@ -36,7 +36,7 @@ public class PutHandlerWorker extends ChannelInboundHandlerAdapter {
 			.ready(this::onReady)
 			.written(this::onWritten)
 			.error(this::onError)
-			.async()
+			.start()
 		;
 	}
 

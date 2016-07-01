@@ -19,7 +19,7 @@ public class HashPutter implements Putter {
 	}
 
 	@Override
-	public void async() {
+	public void start() {
 		new AsyncPut(collection, key, mediaType, readyHandler, writtenHandler, errorHandler);
 	}
 
