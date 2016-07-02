@@ -43,7 +43,7 @@ public class Put implements Close {
 			return;
 
 		try {
-			entry = entry.size(channel.size()).status(Status.Ok);
+			entry = entry.size(channel.size()).status(Status.Ok).mediaType(mediaType);
 			close0();
 			collection.update(key, entry);
 		} catch (Exception e) {
