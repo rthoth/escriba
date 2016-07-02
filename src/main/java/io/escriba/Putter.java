@@ -1,12 +1,14 @@
 package io.escriba;
 
-public interface Putter {
+import java.nio.ByteBuffer;
 
-	void async();
+public interface Putter {
 
 	Putter error(ErrorHandler errorHandler);
 
 	Putter ready(ReadyHandler readyHandler);
+
+	void start();
 
 	Putter written(WrittenHandler writtenHandler);
 
@@ -15,6 +17,6 @@ public interface Putter {
 	}
 
 	interface WrittenHandler {
-		void apply(long total, int last, Write write, Close close) throws Exception;
+		void apply(int written, ByteBuffer buffer, Write write, Close close) throws Exception;
 	}
 }

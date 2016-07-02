@@ -1,6 +1,7 @@
 package io.escriba.hash;
 
 import io.escriba.*;
+import io.escriba.DataEntry.Status;
 import io.escriba.EscribaException.IllegalState;
 import org.mapdb.Atomic;
 import org.mapdb.DB;
@@ -17,7 +18,6 @@ import java.util.concurrent.ExecutorService;
  */
 public class HashCollection implements Collection {
 	private final Atomic.Long atomic;
-	private final DB db;
 	private final File directory;
 	final ExecutorService executorService;
 	final HTreeMap<String, DataEntry> map;
@@ -29,21 +29,20 @@ public class HashCollection implements Collection {
 
 		this.name = name;
 		this.directory = directory;
-		this.db = db;
 		this.executorService = executorService;
 
-		this.atomic = db.atomicLong(name + ".nextID").createOrOpen();
+		atomic = db.atomicLong(name + ".nextID").createOrOpen();
 	}
 
 	@Override
 	public DataChannel getChannel(String key) {
-		if (this.map.containsKey(key)) {
-			DataEntry entry = this.map.get(key);
+		if (map.containsKey(key)) {
+			DataEntry entry = map.get(key);
 
-			if (entry.status != DataEntry.Status.Ok)
+			if (entry.status != Status.Ok)
 				throw new IllegalState(key + " in collection!");
 
-			return new FileDataChannel(entry, this.directory);
+			return new FileDataChannel(entry, directory);
 		}
 		return null;
 	}
@@ -60,8 +59,8 @@ public class HashCollection implements Collection {
 		return entry;
 	}
 
-	Path getPath(DataEntry entry) {
-		return Paths.get(directory.getAbsolutePath(), entry.path);
+	public Path getPath(String key) {
+		return Paths.get(directory.getAbsolutePath(), getOrCreateEntry(key).path);
 	}
 
 	String nextPath() {

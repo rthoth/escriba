@@ -26,11 +26,11 @@ public class Server {
 		this.config = config;
 		this.store = store;
 
-		this.bootstrap = new ServerBootstrap();
-		this.dispatchGroup = new NioEventLoopGroup(config.dispatchers);
-		this.workGroup = new NioEventLoopGroup(config.workers);
+		bootstrap = new ServerBootstrap();
+		dispatchGroup = new NioEventLoopGroup(config.dispatchers);
+		workGroup = new NioEventLoopGroup(config.workers);
 
-		this.bootstrap.group(this.dispatchGroup, this.workGroup)
+		bootstrap.group(dispatchGroup, workGroup)
 			.channel(NioServerSocketChannel.class)
 			.childHandler(new Server.Initializer(this))
 			.childOption(ChannelOption.SO_KEEPALIVE, true)

@@ -2,10 +2,20 @@ package io.escriba;
 
 import java.nio.file.NoSuchFileException;
 
-public class EscribaException extends RuntimeException {
+public abstract class EscribaException extends RuntimeException {
 
 	public EscribaException(String message, Throwable cause) {
 		super(message, cause);
+	}
+
+	public EscribaException(String message) {
+		super(message);
+	}
+
+	public static class IllegalArgument extends EscribaException {
+		public IllegalArgument(String message) {
+			super(message);
+		}
 	}
 
 	public static class IllegalState extends RuntimeException {
