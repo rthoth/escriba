@@ -1,5 +1,7 @@
 package io.escriba;
 
+import java.nio.ByteBuffer;
+
 public interface Putter {
 
 	Putter error(ErrorHandler errorHandler);
@@ -15,6 +17,6 @@ public interface Putter {
 	}
 
 	interface WrittenHandler {
-		void apply(long total, int last, Write write, Close close) throws Exception;
+		void apply(int written, ByteBuffer buffer, Write write, Close close) throws Exception;
 	}
 }

@@ -10,15 +10,17 @@ import java.net.InetSocketAddress;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SuppressWarnings("unused")
 public class GetTest implements Tester, HttpTest {
 
 	private final Config config = new Config(2, 2);
 	private final Server server;
-	private final Store store = new Store(this.newFile("mapdb"), this.newDir("datadir"));
+	private final Store store = new Store(newFile("mapdb"), newDir("datadir"), 1);
 
+	@SuppressWarnings("unused")
 	public GetTest() throws InterruptedException {
-		this.server = new Server(this.config, this.store);
-		this.server.listen(new InetSocketAddress("localhost", 12345));
+		server = new Server(config, store);
+		server.listen(new InetSocketAddress("localhost", 12345));
 		Thread.sleep(3000);
 	}
 

@@ -10,9 +10,11 @@ import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.LastHttpContent;
 
+import java.nio.ByteBuffer;
+
 import static java.lang.Math.min;
 
-public class PutHandlerWorker extends ChannelInboundHandlerAdapter {
+public class PutHandlerStream extends ChannelInboundHandlerAdapter {
 	private static final int MAX_BYTES = 1024 * 64;
 	private static final int MAX_FRAMES = 1024 * 512;
 	private Close close;
@@ -22,10 +24,9 @@ public class PutHandlerWorker extends ChannelInboundHandlerAdapter {
 	private final Request request;
 	private boolean shouldClose;
 	private boolean shouldWrite;
-	private int total;
 	private Write write;
 
-	public PutHandlerWorker(Request request) throws Exception {
+	public PutHandlerStream(Request request) throws Exception {
 		this.request = request;
 
 		String mediaType = request.httpRequest.headers().get(HttpHeaderNames.CONTENT_TYPE);
@@ -42,7 +43,7 @@ public class PutHandlerWorker extends ChannelInboundHandlerAdapter {
 
 	private void addContent(HttpContent httpContent) throws Exception {
 		compositeBuffer.addComponent(true, httpContent.content());
-		check();
+		writeOrClose();
 	}
 
 	@Override
@@ -59,31 +60,6 @@ public class PutHandlerWorker extends ChannelInboundHandlerAdapter {
 		} else {
 			ctx.fireChannelRead(msg);
 		}
-	}
-
-	private void check() throws Exception {
-
-		if (shouldWrite)
-			if (compositeBuffer != null && compositeBuffer.readableBytes() > 0) {
-				if (write != null) {
-					shouldWrite = false;
-					write.apply(compositeBuffer.nioBuffer(0, min(MAX_BYTES, compositeBuffer.readableBytes())), total);
-					return;
-				}
-			}
-
-		if (shouldClose && compositeBuffer != null && compositeBuffer.readableBytes() == 0) {
-			if (close != null)
-				try {
-					close.apply();
-				} catch (Exception e) {
-					// TODO: What to do?
-				} finally {
-					compositeBuffer.release();
-					Http.responseAndClose(ctx, Http.created(request.collectionName + "/" + request.key));
-				}
-		}
-
 	}
 
 	@Override
@@ -103,16 +79,39 @@ public class PutHandlerWorker extends ChannelInboundHandlerAdapter {
 			this.write = write;
 			this.close = close;
 			shouldWrite = true;
-			check();
+			writeOrClose();
 		});
 	}
 
-	private void onWritten(long total, int last, Write write, Close close) throws Exception {
+	private void onWritten(int written, ByteBuffer buffer, Write write, Close close) throws Exception {
 		lockedBlock.locked(() -> {
-			compositeBuffer.skipBytes(last).discardReadBytes();
-			this.total = (int) total;
+			compositeBuffer.skipBytes(written).discardReadBytes();
 			shouldWrite = true;
-			check();
+			writeOrClose();
 		});
+	}
+
+	private void writeOrClose() throws Exception {
+
+		if (write == null)
+			return;
+
+		if (shouldWrite && compositeBuffer != null && compositeBuffer.readableBytes() > 0) {
+			shouldWrite = false;
+			write.apply(compositeBuffer.nioBuffer(0, min(MAX_BYTES, compositeBuffer.readableBytes())));
+			return;
+		}
+
+		if (shouldClose && compositeBuffer != null && compositeBuffer.readableBytes() == 0) {
+			try {
+				close.apply();
+			} catch (Exception e) {
+				// TODO: What to do?
+			} finally {
+				compositeBuffer.release();
+				Http.responseAndClose(ctx, Http.created(request.collectionName + "/" + request.key));
+			}
+		}
+
 	}
 }

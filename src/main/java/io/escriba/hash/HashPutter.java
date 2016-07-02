@@ -19,11 +19,6 @@ public class HashPutter implements Putter {
 	}
 
 	@Override
-	public void start() {
-		new AsyncPut(collection, key, mediaType, readyHandler, writtenHandler, errorHandler);
-	}
-
-	@Override
 	public Putter error(ErrorHandler errorHandler) {
 		this.errorHandler = errorHandler;
 		return this;
@@ -33,6 +28,11 @@ public class HashPutter implements Putter {
 	public Putter ready(ReadyHandler readyHandler) {
 		this.readyHandler = readyHandler;
 		return this;
+	}
+
+	@Override
+	public void start() {
+		new Put(collection, key, mediaType, readyHandler, writtenHandler, errorHandler);
 	}
 
 	@Override

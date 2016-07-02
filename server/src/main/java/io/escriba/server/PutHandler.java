@@ -11,7 +11,7 @@ public class PutHandler extends ChannelInboundHandlerAdapter {
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 		if (msg instanceof Request) {
-			PutHandlerWorker processor = new PutHandlerWorker((Request) msg);
+			PutHandlerStream processor = new PutHandlerStream((Request) msg);
 
 			ctx.pipeline()
 				.addAfter(ctx.name(), "putWorker", processor)
