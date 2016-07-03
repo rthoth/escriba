@@ -9,7 +9,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.*;
 
 public class Http {
 	public static HttpResponse chunked(HttpResponse response) {
-		response.headers().set(HttpHeaderNames.TRANSFER_ENCODING, "chunked");
+		response.headers().set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
 		return response;
 	}
 

@@ -91,5 +91,5 @@ class Getter(TaskSet):
 
 class Strees(HttpLocust):
     task_set = Getter
-    max_wait = 5000
-    min_wait = 1000
+    max_wait = 2000
+    min_wait = 500

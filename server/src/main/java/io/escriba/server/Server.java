@@ -75,7 +75,7 @@ public class Server {
 			ch.pipeline()
 				.addLast("httpDecoder", new HttpRequestDecoder())
 				.addLast("httpEncoder", new HttpResponseEncoder())
-				.addLast("router", new Router(this.server.config, this.server.store))
+				.addLast("router", new Router(server.config, server.store))
 				.addLast("errorCatcher", new ErrorCatcher())
 			;
 		}

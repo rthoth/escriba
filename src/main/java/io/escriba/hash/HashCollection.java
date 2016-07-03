@@ -35,6 +35,11 @@ public class HashCollection implements Collection {
 	}
 
 	@Override
+	public Getter get(String key) {
+		return new HashGetter(this, key);
+	}
+
+	@Override
 	public DataChannel getChannel(String key) {
 		if (map.containsKey(key)) {
 			DataEntry entry = map.get(key);
@@ -45,6 +50,10 @@ public class HashCollection implements Collection {
 			return new FileDataChannel(entry, directory);
 		}
 		return null;
+	}
+
+	DataEntry getEntry(String key) {
+		return map.get(key);
 	}
 
 	DataEntry getOrCreateEntry(String key) {

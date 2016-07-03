@@ -7,7 +7,8 @@ import org.mapdb.DBMaker;
 import java.io.File;
 import java.util.WeakHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.zip.CRC32;
 
 /**
@@ -17,6 +18,11 @@ import java.util.zip.CRC32;
  */
 public class Store {
 
+	private static final ForkJoinPool.ForkJoinWorkerThreadFactory THREAD_FACTORY = pool -> {
+		ForkJoinWorkerThread thread = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
+		thread.setName("Escriba-WorkerThread-" + pool.getPoolSize());
+		return thread;
+	};
 	private final File baseDir;
 	private final WeakHashMap<String, HashCollection> collections = new WeakHashMap<>();
 	private final DB db;
@@ -80,7 +86,7 @@ public class Store {
 
 	private static ExecutorService newExecutorService(int threads) {
 		if (threads > 0)
-			return Executors.newWorkStealingPool(threads);
+			return new ForkJoinPool(threads, THREAD_FACTORY, null, true);
 		else
 			throw new EscribaException.IllegalArgument("threads must be greater than zero!");
 	}

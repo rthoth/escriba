@@ -1,6 +1,7 @@
 package io.escriba.server;
 
 import io.escriba.Collection;
+import io.escriba.Getter;
 import io.escriba.Store;
 import io.netty.handler.codec.http.HttpRequest;
 
@@ -20,6 +21,10 @@ public class Request {
 	}
 
 	public Collection collection() throws Exception {
-		return this.store.collection(this.collectionName, true);
+		return store.collection(collectionName, true);
+	}
+
+	public Getter get() throws Exception {
+		return collection().get(key);
 	}
 }
