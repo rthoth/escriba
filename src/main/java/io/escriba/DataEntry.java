@@ -58,6 +58,8 @@ public class DataEntry {
 
 	private static final int YX = (int) 1e6;
 
+	public static DataEntry DEFAULT = new DataEntry();
+
 	public enum Status {
 		Creating(10), Ok(20), Updating(30), Deleting(40);
 
@@ -110,33 +112,19 @@ public class DataEntry {
 		return new Copy(this);
 	}
 
-	public DataEntry mediaType(String mediaType) {
-		return new DataEntry(create, access, update, mediaType, path, size, status, dataDirIndex);
-	}
-
-	public DataEntry path(String path, int index) {
-		return new DataEntry(create, access, update, mediaType, path, size, status, index);
-	}
-
-	public DataEntry size(long size) {
-		return new DataEntry(create, access, update, mediaType, path, size, status, dataDirIndex);
-	}
-
-	public DataEntry status(Status status) {
-		return new DataEntry(create, access, update, mediaType, path, size, status, dataDirIndex);
-	}
-
 	public static String zyx(long id) {
 		int z = (int) (id / YX);
 		int y = (int) ((id % YX) / X);
 		int x = (int) (id % X);
-		return new StringBuilder().append(toHexString(z)).append(separator).append(toHexString(y)).append(separator).append(toHexString(x)).toString();
+		return toHexString(z) + separator + toHexString(y) + separator + toHexString(x);
 	}
 
 	public static class Copy {
 		private Date access;
+		private Integer dataDirIndex;
 		private String mediaType;
 		private final DataEntry original;
+		private String path;
 		private Long size;
 		private Status status;
 		private Date update;
@@ -150,22 +138,32 @@ public class DataEntry {
 			return this;
 		}
 
-		public DataEntry copy() {
+		public Copy dataDirIndex(int dataDirIndex) {
+			this.dataDirIndex = dataDirIndex;
+			return this;
+		}
+
+		public DataEntry end() {
 			Date create = original.create;
-			String path = original.path;
-			int dataDirIndex = original.dataDirIndex;
 
 			Date access = this.access != null ? this.access : original.access;
 			Date update = this.update != null ? this.update : original.update;
 			String mediaType = this.mediaType != null ? this.mediaType : original.mediaType;
 			long size = this.size != null ? this.size : original.size;
 			Status status = this.status != null ? this.status : original.status;
+			int dataDirIndex = this.dataDirIndex != null ? this.dataDirIndex : original.dataDirIndex;
+			String path = this.path != null ? this.path : original.path;
 
 			return new DataEntry(create, access, update, mediaType, path, size, status, dataDirIndex);
 		}
 
 		public Copy mediaType(String mediaType) {
 			this.mediaType = mediaType;
+			return this;
+		}
+
+		public Copy path(String path) {
+			this.path = path;
 			return this;
 		}
 

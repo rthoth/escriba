@@ -52,7 +52,7 @@ public class Put implements Close {
 				.mediaType(mediaType)
 				.update(date)
 				.access(date)
-				.copy()
+				.end()
 			;
 
 			close0();
@@ -112,7 +112,7 @@ public class Put implements Close {
 			entry = collection.getOrCreateEntry(key);
 
 			if (entry.status != Status.Creating)
-				collection.update(key, entry = entry.status(Status.Updating));
+				collection.update(key, entry = entry.copy().status(Status.Updating).end());
 
 			Path path = collection.getPath(key);
 

@@ -48,7 +48,7 @@ public class Get implements Close {
 
 			entry = entry.copy()
 				.access(date)
-				.copy()
+				.end()
 			;
 
 			collection.update(key, entry);

@@ -46,7 +46,12 @@ public class HashCollection implements Collection {
 		DataEntry entry = map.get(key);
 
 		if (entry == null) {
-			entry = new DataEntry().path(nextPath(), dataDirPool.next().index);
+			entry = DataEntry.DEFAULT
+				.copy()
+				.path(nextPath())
+				.dataDirIndex(dataDirPool.next().index)
+				.end()
+			;
 			map.put(key, entry);
 		}
 
