@@ -1,11 +1,11 @@
 package io.escriba.server;
 
+import io.escriba.EscribaException;
 import io.escriba.EscribaException.NoValue;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.HttpObject;
+import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 
@@ -20,17 +20,21 @@ public class ErrorCatcher extends ChannelInboundHandlerAdapter {
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-		HttpObject response;
+		HttpResponse response;
 
 		if (cause instanceof NoValue)
-			response = noValue(ctx, (NoValue) cause);
-		else
-			response = internalError(ctx, cause);
+			response = noValue((NoValue) cause);
 
-		ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+		else if (cause instanceof EscribaException.NotFound)
+			response = notFound((EscribaException.NotFound) cause);
+
+		else
+			response = internalError(cause);
+
+		Http.responseAndClose(ctx, response);
 	}
 
-	private DefaultFullHttpResponse internalError(ChannelHandlerContext ctx, Throwable throwable) {
+	private DefaultFullHttpResponse internalError(Throwable throwable) {
 		DefaultFullHttpResponse response = createResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR, throwable.getMessage());
 
 		StringBuilder sb = new StringBuilder();
@@ -48,8 +52,12 @@ public class ErrorCatcher extends ChannelInboundHandlerAdapter {
 		return response;
 	}
 
-	private DefaultFullHttpResponse noValue(ChannelHandlerContext ctx, NoValue noValueExc) {
+	private DefaultFullHttpResponse noValue(NoValue noValueExc) {
 		DefaultFullHttpResponse response = ErrorCatcher.createResponse(HttpResponseStatus.NOT_FOUND, noValueExc.getMessage());
 		return response;
+	}
+
+	private HttpResponse notFound(EscribaException.NotFound cause) {
+		return Http.notFound(cause.getMessage());
 	}
 }

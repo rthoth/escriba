@@ -51,6 +51,9 @@ public class Router extends ChannelInboundHandlerAdapter {
 			else if (request.method() == HttpMethod.GET)
 				handler = new GetHandler();
 
+			else if (request.method() == HttpMethod.DELETE)
+				handler = new DeleteHandler();
+
 			if (handler != null) {
 
 				ctx.pipeline()

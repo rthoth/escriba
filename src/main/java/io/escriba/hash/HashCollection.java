@@ -83,7 +83,16 @@ public class HashCollection implements Collection {
 		return new HashPutter(this, key, mediaType);
 	}
 
-	void update(String key, DataEntry entry) {
+	@Override
+	public Remover remove(String key) {
+		return new HashRemover(this, key);
+	}
+
+	void removeEntry(String key) {
+		map.remove(key);
+	}
+
+	void updateEntry(String key, DataEntry entry) {
 		map.put(key, entry);
 	}
 }

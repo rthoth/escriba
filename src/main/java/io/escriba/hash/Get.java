@@ -51,7 +51,7 @@ public class Get implements Close {
 				.end()
 			;
 
-			collection.update(key, entry);
+			collection.updateEntry(key, entry);
 
 			close0();
 		} catch (Exception e) {

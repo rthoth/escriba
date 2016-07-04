@@ -31,6 +31,10 @@ public class Http {
 		return response;
 	}
 
+	public static HttpResponse okWithStatus(String status) {
+		return new DefaultHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(OK.code(), status));
+	}
+
 	public static void response(ChannelHandlerContext ctx, HttpResponse httpResponse) {
 		ctx.writeAndFlush(httpResponse);
 	}

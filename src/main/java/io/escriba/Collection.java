@@ -6,4 +6,5 @@ public interface Collection {
 
 	Putter put(String key, String mediaType);
 
+	Remover remove(String key);
 }

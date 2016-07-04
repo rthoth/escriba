@@ -56,7 +56,7 @@ public class Put implements Close {
 			;
 
 			close0();
-			collection.update(key, entry);
+			collection.updateEntry(key, entry);
 		} catch (Exception e) {
 			if (errorHandler != null)
 				try {
@@ -112,7 +112,7 @@ public class Put implements Close {
 			entry = collection.getOrCreateEntry(key);
 
 			if (entry.status != Status.Creating)
-				collection.update(key, entry = entry.copy().status(Status.Updating).end());
+				collection.updateEntry(key, entry = entry.copy().status(Status.Updating).end());
 
 			Path path = collection.getPath(key);
 			Path parent = path.getParent();

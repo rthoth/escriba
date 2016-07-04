@@ -23,18 +23,18 @@ public class GetHandler extends ChannelInboundHandlerAdapter {
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 		if (msg instanceof Request) {
-			process((Request) msg);
+			get((Request) msg);
 		} else
 			ctx.fireChannelRead(msg);
+	}
+
+	private void get(Request request) throws Exception {
+		new GetChunkedResponse(request.get(), ctx, CHUNK_SIZE);
 	}
 
 	@Override
 	public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
 		this.ctx = ctx;
-	}
-
-	private void process(Request request) throws Exception {
-		new GetChunkedResponse(request.get(), ctx, CHUNK_SIZE);
 	}
 
 	private static class GetChunkedResponse {
