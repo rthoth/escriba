@@ -9,6 +9,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Date;
 
 public class Put implements Close {
 
@@ -32,7 +33,7 @@ public class Put implements Close {
 		this.errorHandler = errorHandler;
 
 		if (writtenHandler != null)
-			collection.executorService.submit(this::lockFile).isDone();
+			collection.executor.submit(this::lockFile);
 		else
 			throw new EscribaException.IllegalArgument("The writtenHandler must be defined");
 	}
@@ -43,7 +44,17 @@ public class Put implements Close {
 			return;
 
 		try {
-			entry = entry.size(channel.size()).status(Status.Ok).mediaType(mediaType);
+			Date date = new Date();
+
+			entry = entry.copy()
+				.size(channel.size())
+				.status(Status.Ok)
+				.mediaType(mediaType)
+				.update(date)
+				.access(date)
+				.copy()
+			;
+
 			close0();
 			collection.update(key, entry);
 		} catch (Exception e) {
@@ -99,6 +110,7 @@ public class Put implements Close {
 		try {
 
 			entry = collection.getOrCreateEntry(key);
+
 			if (entry.status != Status.Creating)
 				collection.update(key, entry = entry.status(Status.Updating));
 
@@ -126,7 +138,7 @@ public class Put implements Close {
 			if (isClosed())
 				return;
 			//noinspection CodeBlock2Expr
-			collection.executorService.submit(() -> {
+			collection.executor.submit(() -> {
 				write(buffer);
 			});
 		};

@@ -23,9 +23,9 @@ def next_key():
 samples = []
 kb = 1024
 mb = kb * kb
-smin = 5 * mb
+smin = 100 * kb
 smax = 10 * mb
-num_samples = 10
+num_samples = kb
 slicee = (smax - smin) / num_samples
 
 print('Creating bigdata [%d, %d]...' % (smin, smax))

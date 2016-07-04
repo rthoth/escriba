@@ -1,4 +1,4 @@
-package io.escriba.functional;
+package io.escriba;
 
 public class T2<A, B> {
 

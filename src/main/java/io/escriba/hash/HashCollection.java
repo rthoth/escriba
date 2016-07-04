@@ -1,8 +1,6 @@
 package io.escriba.hash;
 
 import io.escriba.*;
-import io.escriba.DataEntry.Status;
-import io.escriba.EscribaException.IllegalState;
 import org.mapdb.Atomic;
 import org.mapdb.DB;
 import org.mapdb.HTreeMap;
@@ -18,38 +16,25 @@ import java.util.concurrent.ExecutorService;
  */
 public class HashCollection implements Collection {
 	private final Atomic.Long atomic;
-	private final File directory;
-	final ExecutorService executorService;
+	private final DataDirPool dataDirPool;
+	final ExecutorService executor;
 	final HTreeMap<String, DataEntry> map;
 	final String name;
 
-	public HashCollection(String name, DB db, File directory, ExecutorService executorService) {
+	public HashCollection(String name, DB db, DataDirPool dataDirPool, ExecutorService executor) {
 
 		map = db.hashMap(name, Serializer.STRING, DataEntry.SERIALIZER).createOrOpen();
 
 		this.name = name;
-		this.directory = directory;
-		this.executorService = executorService;
+		this.executor = executor;
 
 		atomic = db.atomicLong(name + ".nextID").createOrOpen();
+		this.dataDirPool = dataDirPool;
 	}
 
 	@Override
 	public Getter get(String key) {
 		return new HashGetter(this, key);
-	}
-
-	@Override
-	public DataChannel getChannel(String key) {
-		if (map.containsKey(key)) {
-			DataEntry entry = map.get(key);
-
-			if (entry.status != Status.Ok)
-				throw new IllegalState(key + " in collection!");
-
-			return new FileDataChannel(entry, directory);
-		}
-		return null;
 	}
 
 	DataEntry getEntry(String key) {
@@ -61,7 +46,7 @@ public class HashCollection implements Collection {
 		DataEntry entry = map.get(key);
 
 		if (entry == null) {
-			entry = new DataEntry().path(nextPath());
+			entry = new DataEntry().path(nextPath(), dataDirPool.next().index);
 			map.put(key, entry);
 		}
 
@@ -69,10 +54,17 @@ public class HashCollection implements Collection {
 	}
 
 	public Path getPath(String key) {
-		return Paths.get(directory.getAbsolutePath(), getOrCreateEntry(key).path);
+		DataEntry dataEntry = getOrCreateEntry(key);
+
+		File dir = new File(dataDirPool.get(dataEntry.dataDirIndex).dir, Store.collectionDirName(name));
+
+		if (!dir.exists())
+			dir.mkdirs();
+
+		return Paths.get(dir.getAbsolutePath(), dataEntry.path);
 	}
 
-	String nextPath() {
+	private String nextPath() {
 		synchronized (atomic) {
 			return DataEntry.zyx(atomic.getAndIncrement());
 		}

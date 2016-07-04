@@ -23,16 +23,18 @@ public class Store {
 		thread.setName("Escriba-WorkerThread-" + pool.getPoolSize());
 		return thread;
 	};
-	private final File baseDir;
+
 	private final WeakHashMap<String, HashCollection> collections = new WeakHashMap<>();
+	private final DataDirPool.RoundRobin dataDirPool;
 	private final DB db;
 	final ExecutorService executorService;
 
-	public Store(File mapDBFile, File baseDir, int threads) {
-		this(mapDBFile, baseDir, newExecutorService(threads));
+	@SuppressWarnings("unused")
+	public Store(File mapDBFile, DataDir[] dataDirs, int threads) {
+		this(mapDBFile, dataDirs, newExecutorService(threads));
 	}
 
-	public Store(File mapDBFile, File baseDir, ExecutorService executorService) {
+	public Store(File mapDBFile, DataDir[] dataDirs, ExecutorService executorService) {
 		try {
 			db = DBMaker.fileDB(mapDBFile)
 				.transactionEnable()
@@ -41,13 +43,16 @@ public class Store {
 			throw new EscribaException.Unexpected("It's impossible create MapDB control at " + mapDBFile.getAbsolutePath(), e);
 		}
 
-		if (baseDir == null)
-			throw new EscribaException.IllegalArgument("baseDir is null");
+		if (dataDirs == null)
+			throw new EscribaException.IllegalArgument("dataDirs is null");
+
+		if (dataDirs.length == 0)
+			throw new EscribaException.IllegalArgument("dataDirs don't have elements");
 
 		if (executorService == null)
 			throw new EscribaException.IllegalArgument("ExecutorService is null");
 
-		this.baseDir = baseDir;
+		dataDirPool = new DataDirPool.RoundRobin(dataDirs);
 		this.executorService = executorService;
 	}
 
@@ -61,7 +66,7 @@ public class Store {
 
 			if (create || db.exists(collectionName))
 				try {
-					collections.put(collectionName, new HashCollection(collectionName, db, directoryOf(collectionName), executorService));
+					collections.put(collectionName, new HashCollection(collectionName, db, dataDirPool.copy(), executorService));
 				} catch (Exception e) {
 					throw new EscribaException.Unexpected("Impossible create collection " + collectionName, e);
 				}
@@ -72,16 +77,10 @@ public class Store {
 		return collections.get(collectionName);
 	}
 
-	public static String directoryNameOf(String collectionName) {
+	public static String collectionDirName(String collectionName) {
 		CRC32 crc32 = new CRC32();
 		crc32.update(collectionName.getBytes());
 		return Long.toString(crc32.getValue(), 32);
-	}
-
-	private File directoryOf(String collectionName) {
-		File collectionDir = new File(baseDir, directoryNameOf(collectionName));
-		collectionDir.mkdirs();
-		return collectionDir;
 	}
 
 	private static ExecutorService newExecutorService(int threads) {
