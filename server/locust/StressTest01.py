@@ -10,21 +10,22 @@ def next_collection():
     return colls[randint(0, colls_limit)]
 
 
-current_key = 0
+possible_keys = []
+for i in range(0, int(1e2)):
+	possible_keys.append(randint(0, 2e9))
 
-
+current_key = -1
 def next_key():
     global current_key
-    key = current_key
-    current_key = (current_key + 1) % 1e2
-    return key
+    current_key = (current_key + 1) % len(possible_keys)
+    return possible_keys[current_key]
 
 
 samples = []
 kb = 1024
 mb = kb * kb
 smin = 5 * mb
-smax = 10 * mb
+smax = 20 * mb
 num_samples = kb
 slicee = (smax - smin) / num_samples
 
