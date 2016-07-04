@@ -15,8 +15,10 @@ import java.nio.ByteBuffer;
 import static java.lang.Math.min;
 
 public class PutHandlerStream extends ChannelInboundHandlerAdapter {
-	private static final int MAX_BYTES = 1024 * 64;
+	private static final int DEFAULT_CACHE_SIZE = 1024 * 256;
 	private static final int MAX_FRAMES = 1024 * 512;
+	private ByteBuffer cache;
+	private final int cacheSize;
 	private Close close;
 	private CompositeByteBuf compositeBuffer;
 	private ChannelHandlerContext ctx;
@@ -25,11 +27,20 @@ public class PutHandlerStream extends ChannelInboundHandlerAdapter {
 	private boolean shouldClose;
 	private boolean shouldWrite;
 	private Write write;
+	private boolean writing;
 
+	@SuppressWarnings("unused")
 	public PutHandlerStream(Request request) throws Exception {
+		this(request, DEFAULT_CACHE_SIZE);
+	}
+
+
+	public PutHandlerStream(Request request, int cacheSize) throws Exception {
 		this.request = request;
+		this.cacheSize = cacheSize;
 
 		String mediaType = request.httpRequest.headers().get(HttpHeaderNames.CONTENT_TYPE);
+
 		if (mediaType == null)
 			mediaType = DataEntry.DEFAULT_MEDIA_TYPE;
 
@@ -65,6 +76,7 @@ public class PutHandlerStream extends ChannelInboundHandlerAdapter {
 	@Override
 	public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
 		compositeBuffer = ctx.alloc().compositeDirectBuffer(MAX_FRAMES);
+		cache = ByteBuffer.allocate(cacheSize);
 		this.ctx = ctx;
 	}
 
@@ -85,29 +97,50 @@ public class PutHandlerStream extends ChannelInboundHandlerAdapter {
 		lockedBlock.locked(() -> {
 			compositeBuffer.skipBytes(written).discardReadBytes();
 			shouldWrite = true;
+			writing = false;
 			writeOrClose();
 		});
 	}
 
 	private void writeOrClose() throws Exception {
 
-		if (write == null)
+		if (write == null || compositeBuffer == null)
 			return;
 
-		if (shouldWrite && compositeBuffer != null && compositeBuffer.readableBytes() > 0) {
+		if (shouldWrite && compositeBuffer.readableBytes() >= cacheSize) {
 			shouldWrite = false;
-			write.apply(compositeBuffer.nioBuffer(0, min(MAX_BYTES, compositeBuffer.readableBytes())));
+			writing = true;
+			cache.clear();
+
+			compositeBuffer.markReaderIndex();
+			compositeBuffer.readBytes(cache);
+			compositeBuffer.resetReaderIndex();
+
+			cache.flip();
+			write.apply(cache);
 			return;
 		}
 
-		if (shouldClose && compositeBuffer != null && compositeBuffer.readableBytes() == 0) {
-			try {
-				close.apply();
-			} catch (Exception e) {
-				// TODO: What to do?
-			} finally {
-				compositeBuffer.release();
-				Http.responseAndClose(ctx, Http.created(request.collectionName + "/" + request.key));
+		if (shouldClose && !writing) {
+
+			if (compositeBuffer.readableBytes() > 0) {
+				cache.clear().limit(min(compositeBuffer.readableBytes(), cacheSize));
+
+				compositeBuffer.markReaderIndex();
+				compositeBuffer.readBytes(cache);
+				compositeBuffer.resetReaderIndex();
+
+				cache.flip();
+				write.apply(cache);
+			} else {
+				try {
+					close.apply();
+				} catch (Exception e) {
+					// TODO: What to do?
+				} finally {
+					compositeBuffer.release();
+					Http.responseAndClose(ctx, Http.created(request.collectionName + "/" + request.key));
+				}
 			}
 		}
 

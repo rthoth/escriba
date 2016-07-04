@@ -24,8 +24,8 @@ def next_key():
 samples = []
 kb = 1024
 mb = kb * kb
-smin = 5 * mb
-smax = 20 * mb
+smin = 16 * kb
+smax = 20 * mb + 513
 num_samples = kb
 slicee = (smax - smin) / num_samples
 
