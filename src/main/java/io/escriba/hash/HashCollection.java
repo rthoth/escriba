@@ -6,9 +6,8 @@ import org.mapdb.DB;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
 
-import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -61,12 +60,16 @@ public class HashCollection implements Collection {
 	public Path getPath(String key) {
 		DataEntry dataEntry = getOrCreateEntry(key);
 
-		File dir = new File(dataDirPool.get(dataEntry.dataDirIndex).dir, Store.collectionDirName(name));
+		Path path = dataDirPool.get(dataEntry.dataDirIndex).path.resolve(Store.collectionDirName(name));
 
-		if (!dir.exists())
-			dir.mkdirs();
+		if (!Files.exists(path))
+			try {
+				Files.createDirectories(path);
+			} catch (Exception e) {
+				throw new EscribaException.IllegalState("Impossible create " + path + " for collection " + name);
+			}
 
-		return Paths.get(dir.getAbsolutePath(), dataEntry.path);
+		return path.resolve(dataEntry.path);
 	}
 
 	private String nextPath() {

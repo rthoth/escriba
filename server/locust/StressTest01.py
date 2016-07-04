@@ -1,7 +1,7 @@
 from locust import HttpLocust, TaskSet, task
 from random import randint
 
-colls = ('collA', 'collB', 'woohoo')
+colls = ('collA', 'collB')
 colls_limit = len(colls) - 1
 
 
@@ -16,7 +16,7 @@ current_key = 0
 def next_key():
     global current_key
     key = current_key
-    current_key = (current_key + 1) % 1e5
+    current_key = (current_key + 1) % 1e2
     return key
 
 
@@ -24,7 +24,7 @@ samples = []
 kb = 1024
 mb = kb * kb
 smin = 100 * kb
-smax = 10 * mb
+smax = 1 * mb
 num_samples = kb
 slicee = (smax - smin) / num_samples
 

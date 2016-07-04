@@ -3,10 +3,10 @@ package io.escriba.hash;
 import io.escriba.*;
 import io.escriba.DataEntry.Status;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Date;
@@ -115,11 +115,10 @@ public class Put implements Close {
 				collection.update(key, entry = entry.copy().status(Status.Updating).end());
 
 			Path path = collection.getPath(key);
+			Path parent = path.getParent();
 
-			File parent = path.getParent().toFile();
-
-			if (!parent.exists())
-				parent.mkdirs();
+			if (!Files.exists(parent))
+				Files.createDirectories(parent);
 
 			channel = FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
 			lock = channel.lock();

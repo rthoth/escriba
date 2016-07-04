@@ -24,7 +24,7 @@ public interface DataDirPool<T extends DataDirPool> {
 			entries = new T2[dataDirs.length];
 			int i = 0, ceil = -1;
 			for (DataDir dataDir : dataDirs) {
-				dataDir = new DataDir(dataDir.dir, dataDir.weight / min, i);
+				dataDir = new DataDir(dataDir.path, dataDir.weight / min, i);
 				total += dataDir.weight;
 				entries[i] = new T2(ceil + dataDir.weight, dataDir);
 				ceil = entries[i++].a;

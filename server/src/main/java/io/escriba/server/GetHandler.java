@@ -66,7 +66,6 @@ public class GetHandler extends ChannelInboundHandlerAdapter {
 					buffer.limit(bytes).rewind();
 					ByteBuf buf = ctx.alloc().buffer(bytes);
 					buf.writeBytes(buffer);
-
 					ctx.writeAndFlush(buf);
 				}
 
