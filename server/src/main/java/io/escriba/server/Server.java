@@ -18,17 +18,15 @@ public class Server {
 
 	private final ServerBootstrap bootstrap;
 	private final Config config;
-	private final EventLoopGroup dispatchGroup;
 	private final Store store;
-	private final NioEventLoopGroup workGroup;
 
 	public Server(Config config, Store store) {
 		this.config = config;
 		this.store = store;
 
 		bootstrap = new ServerBootstrap();
-		dispatchGroup = new NioEventLoopGroup(config.dispatchers);
-		workGroup = new NioEventLoopGroup(config.workers);
+		EventLoopGroup dispatchGroup = new NioEventLoopGroup(config.dispatchers);
+		NioEventLoopGroup workGroup = new NioEventLoopGroup(config.workers);
 
 		bootstrap.group(dispatchGroup, workGroup)
 			.channel(NioServerSocketChannel.class)

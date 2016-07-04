@@ -30,8 +30,8 @@ public class Router extends ChannelInboundHandlerAdapter {
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+		//noinspection CodeBlock2Expr
 		ctx.channel().closeFuture().addListener(future -> {
-			System.out.println("Essa conexão foi fechada por causa disso!");
 			cause.printStackTrace();
 		});
 	}
@@ -58,7 +58,7 @@ public class Router extends ChannelInboundHandlerAdapter {
 					.remove("router")
 				;
 
-				ctx.fireChannelRead(new Request(this.config, this.store, collection, key, request));
+				ctx.fireChannelRead(new Request(config, store, collection, key, request));
 			} else {
 				// TODO: Exception?
 			}

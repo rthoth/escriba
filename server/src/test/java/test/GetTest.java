@@ -1,6 +1,8 @@
 package test;
 
+import io.escriba.DataDir;
 import io.escriba.Store;
+import io.escriba.T2;
 import io.escriba.server.Config;
 import io.escriba.server.Server;
 import org.apache.commons.io.IOUtils;
@@ -15,7 +17,7 @@ public class GetTest implements Tester, HttpTest {
 
 	private final Config config = new Config(2, 2);
 	private final Server server;
-	private final Store store = new Store(newFile("mapdb"), newDir("datadir"), 1);
+	private final Store store = new Store(newFile("mapdb"), DataDir.of(T2.of(1, newDir("datadir"))), 1);
 
 	@SuppressWarnings("unused")
 	public GetTest() throws InterruptedException {

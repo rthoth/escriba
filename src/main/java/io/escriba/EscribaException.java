@@ -45,5 +45,9 @@ public abstract class EscribaException extends RuntimeException {
 		public Unexpected(Throwable cause) {
 			super(cause);
 		}
+
+		public Unexpected(String message) {
+			super(message);
+		}
 	}
 }

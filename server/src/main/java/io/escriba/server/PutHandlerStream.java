@@ -69,9 +69,7 @@ public class PutHandlerStream extends ChannelInboundHandlerAdapter {
 	}
 
 	private void onError(Throwable throwable) throws Exception {
-		lockedBlock.locked(() -> {
-			throwable.printStackTrace();
-		});
+		lockedBlock.locked(throwable::printStackTrace);
 	}
 
 	private void onReady(Write write, Close close) throws Exception {

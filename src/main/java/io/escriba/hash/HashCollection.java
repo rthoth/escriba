@@ -1,16 +1,13 @@
 package io.escriba.hash;
 
 import io.escriba.*;
-import io.escriba.DataEntry.Status;
-import io.escriba.EscribaException.IllegalState;
 import org.mapdb.Atomic;
 import org.mapdb.DB;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
 
-import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -18,38 +15,25 @@ import java.util.concurrent.ExecutorService;
  */
 public class HashCollection implements Collection {
 	private final Atomic.Long atomic;
-	private final File directory;
-	final ExecutorService executorService;
+	private final DataDirPool dataDirPool;
+	final ExecutorService executor;
 	final HTreeMap<String, DataEntry> map;
 	final String name;
 
-	public HashCollection(String name, DB db, File directory, ExecutorService executorService) {
+	public HashCollection(String name, DB db, DataDirPool dataDirPool, ExecutorService executor) {
 
 		map = db.hashMap(name, Serializer.STRING, DataEntry.SERIALIZER).createOrOpen();
 
 		this.name = name;
-		this.directory = directory;
-		this.executorService = executorService;
+		this.executor = executor;
 
 		atomic = db.atomicLong(name + ".nextID").createOrOpen();
+		this.dataDirPool = dataDirPool;
 	}
 
 	@Override
 	public Getter get(String key) {
 		return new HashGetter(this, key);
-	}
-
-	@Override
-	public DataChannel getChannel(String key) {
-		if (map.containsKey(key)) {
-			DataEntry entry = map.get(key);
-
-			if (entry.status != Status.Ok)
-				throw new IllegalState(key + " in collection!");
-
-			return new FileDataChannel(entry, directory);
-		}
-		return null;
 	}
 
 	DataEntry getEntry(String key) {
@@ -61,7 +45,12 @@ public class HashCollection implements Collection {
 		DataEntry entry = map.get(key);
 
 		if (entry == null) {
-			entry = new DataEntry().path(nextPath());
+			entry = DataEntry.DEFAULT
+				.copy()
+				.path(nextPath())
+				.dataDirIndex(dataDirPool.next().index)
+				.end()
+			;
 			map.put(key, entry);
 		}
 
@@ -69,10 +58,21 @@ public class HashCollection implements Collection {
 	}
 
 	public Path getPath(String key) {
-		return Paths.get(directory.getAbsolutePath(), getOrCreateEntry(key).path);
+		DataEntry dataEntry = getOrCreateEntry(key);
+
+		Path path = dataDirPool.get(dataEntry.dataDirIndex).path.resolve(Store.collectionDirName(name));
+
+		if (!Files.exists(path))
+			try {
+				Files.createDirectories(path);
+			} catch (Exception e) {
+				throw new EscribaException.IllegalState("Impossible create " + path + " for collection " + name);
+			}
+
+		return path.resolve(dataEntry.path);
 	}
 
-	String nextPath() {
+	private String nextPath() {
 		synchronized (atomic) {
 			return DataEntry.zyx(atomic.getAndIncrement());
 		}

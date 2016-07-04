@@ -66,7 +66,6 @@ public class GetHandler extends ChannelInboundHandlerAdapter {
 					buffer.limit(bytes).rewind();
 					ByteBuf buf = ctx.alloc().buffer(bytes);
 					buf.writeBytes(buffer);
-
 					ctx.writeAndFlush(buf);
 				}
 
@@ -85,7 +84,7 @@ public class GetHandler extends ChannelInboundHandlerAdapter {
 			HttpResponse httpResponse = Http.chunked(Http.ok(entry.mediaType));
 			httpResponse.headers().set(HttpHeaderNames.CONTENT_LENGTH, entry.size);
 			ctx.writeAndFlush(httpResponse);
-			read.apply(ByteBuffer.allocateDirect(chunkSize));
+			read.apply(ByteBuffer.allocate(chunkSize));
 		}
 	}
 }

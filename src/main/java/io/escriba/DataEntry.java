@@ -37,8 +37,9 @@ public class DataEntry {
 			String path = input.readUTF();
 			long size = input.readLong();
 			Status status = Status.valueOf(input.readByte());
+			int dataDirIndex = input.readInt();
 
-			return new DataEntry(create, access, update, mediaType, path, size, status);
+			return new DataEntry(create, access, update, mediaType, path, size, status, dataDirIndex);
 		}
 
 		@Override
@@ -50,11 +51,14 @@ public class DataEntry {
 			out.writeUTF(entry.path);
 			out.writeLong(entry.size);
 			out.writeByte(entry.status.value);
+			out.writeInt(entry.dataDirIndex);
 		}
 	};
 	private static final int X = (int) 1e3;
 
 	private static final int YX = (int) 1e6;
+
+	public static DataEntry DEFAULT = new DataEntry();
 
 	public enum Status {
 		Creating(10), Ok(20), Updating(30), Deleting(40);
@@ -77,13 +81,14 @@ public class DataEntry {
 
 	public final Date access;
 	public final Date create;
+	public final int dataDirIndex;
 	public final String mediaType;
 	public final String path;
 	public final long size;
 	public final Status status;
 	public final Date update;
 
-	public DataEntry(Date create, Date access, Date update, String mediaType, String path, long size, Status status) {
+	public DataEntry(Date create, Date access, Date update, String mediaType, String path, long size, Status status, int dataDirIndex) {
 		this.create = create;
 		this.access = access;
 		this.update = update;
@@ -91,6 +96,7 @@ public class DataEntry {
 		this.path = path;
 		this.size = size;
 		this.status = status;
+		this.dataDirIndex = dataDirIndex;
 	}
 
 	public DataEntry() {
@@ -99,28 +105,81 @@ public class DataEntry {
 		path = null;
 		size = 0;
 		status = Status.Creating;
+		dataDirIndex = 0;
 	}
 
-	public DataEntry mediaType(String mediaType) {
-		return new DataEntry(create, access, update, mediaType, path, size, status);
+	public Copy copy() {
+		return new Copy(this);
 	}
 
-	public DataEntry path(String path) {
-		return new DataEntry(create, access, update, mediaType, path, size, status);
+	public static String zyx(long id) {
+		int z = (int) (id / YX);
+		int y = (int) ((id % YX) / X);
+		int x = (int) (id % X);
+		return toHexString(z) + separator + toHexString(y) + separator + toHexString(x);
 	}
 
-	public DataEntry size(long size) {
-		return new DataEntry(create, access, update, mediaType, path, size, status);
-	}
+	public static class Copy {
+		private Date access;
+		private Integer dataDirIndex;
+		private String mediaType;
+		private final DataEntry original;
+		private String path;
+		private Long size;
+		private Status status;
+		private Date update;
 
-	public DataEntry status(Status status) {
-		return new DataEntry(create, access, update, mediaType, path, size, status);
-	}
+		public Copy(DataEntry original) {
+			this.original = original;
+		}
 
-	public static String zyx(long value) {
-		int z = (int) (value / YX);
-		int y = (int) ((value % YX) / X);
-		int x = (int) (value % X);
-		return new StringBuilder().append(toHexString(z)).append(separator).append(toHexString(y)).append(separator).append(toHexString(x)).toString();
+		public Copy access(Date access) {
+			this.access = access;
+			return this;
+		}
+
+		public Copy dataDirIndex(int dataDirIndex) {
+			this.dataDirIndex = dataDirIndex;
+			return this;
+		}
+
+		public DataEntry end() {
+			Date create = original.create;
+
+			Date access = this.access != null ? this.access : original.access;
+			Date update = this.update != null ? this.update : original.update;
+			String mediaType = this.mediaType != null ? this.mediaType : original.mediaType;
+			long size = this.size != null ? this.size : original.size;
+			Status status = this.status != null ? this.status : original.status;
+			int dataDirIndex = this.dataDirIndex != null ? this.dataDirIndex : original.dataDirIndex;
+			String path = this.path != null ? this.path : original.path;
+
+			return new DataEntry(create, access, update, mediaType, path, size, status, dataDirIndex);
+		}
+
+		public Copy mediaType(String mediaType) {
+			this.mediaType = mediaType;
+			return this;
+		}
+
+		public Copy path(String path) {
+			this.path = path;
+			return this;
+		}
+
+		public Copy size(long size) {
+			this.size = size;
+			return this;
+		}
+
+		public Copy status(Status status) {
+			this.status = status;
+			return this;
+		}
+
+		public Copy update(Date update) {
+			this.update = update;
+			return this;
+		}
 	}
 }
