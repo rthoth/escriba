@@ -1,5 +1,9 @@
 allprojects {
     apply plugin: 'java'
+    apply plugin: 'maven-publish'
+
+    group 'io.escriba'
+    version '0.1.0'
 
     repositories {
         mavenCentral()
@@ -16,7 +20,38 @@ allprojects {
         testCompile 'org.testng:testng:6.9.10'
     }
 
-//    sourceCompatibility = '8'
+    task sourceJar(type: Jar) {
+        from sourceSets.main.allJava
+    }
+
+    task javadocJar(type: Jar) {
+        from javadoc
+    }
+
+    publishing {
+        publications {
+            maven(MavenPublication) {
+                from components.java
+                artifact sourceJar {
+                    classifier 'sources'
+                }
+                artifact javadocJar {
+                    classifier 'javadoc'
+                }
+            }
+        }
+
+        repositories {
+            maven {
+                url "http://repo.ti.lemaf.ufla.br/nexus/content/repositories/releases/"
+
+                credentials {
+                    username "$mavenUser"
+                    password "$mavenPassword"
+                }
+            }
+        }
+    }
 }
 
 dependencies {
