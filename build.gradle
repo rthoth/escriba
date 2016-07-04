@@ -1,0 +1,74 @@
+allprojects {
+    apply plugin: 'java'
+    apply plugin: 'maven-publish'
+
+    group 'io.escriba'
+    version '0.1.0'
+
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+
+
+    test {
+        useTestNG()
+    }
+
+    dependencies {
+        testCompile 'org.assertj:assertj-core:3.4.1'
+        testCompile 'org.testng:testng:6.9.10'
+    }
+
+    task sourceJar(type: Jar) {
+        from sourceSets.main.allJava
+    }
+
+    task javadocJar(type: Jar) {
+        from javadoc
+    }
+
+    publishing {
+        publications {
+            maven(MavenPublication) {
+                from components.java
+                artifact sourceJar {
+                    classifier 'sources'
+                }
+                artifact javadocJar {
+                    classifier 'javadoc'
+                }
+            }
+        }
+
+        repositories {
+            maven {
+                url "http://repo.ti.lemaf.ufla.br/nexus/content/repositories/releases/"
+
+                credentials {
+                    username "$mavenUser"
+                    password "$mavenPassword"
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+    compile 'org.mapdb:mapdb:3.0.0-RC2'
+}
+
+
+project(':server') {
+
+    String NettyVersion = "4.1.1.Final"
+
+    dependencies {
+        compile project(':')
+        compile "io.netty:netty-transport:${NettyVersion}"
+        compile "io.netty:netty-codec-http:${NettyVersion}"
+        compile "io.netty:netty-handler:${NettyVersion}"
+        testCompile "com.mashape.unirest:unirest-java:1.4.9"
+        testCompile "commons-io:commons-io:2.5"
+    }
+}
