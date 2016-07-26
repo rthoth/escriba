@@ -4,7 +4,7 @@ import java.io.File;
 import java.nio.file.Path;
 
 /**
- * Each dataDir
+ * DataDir
  */
 public class DataDir {
 

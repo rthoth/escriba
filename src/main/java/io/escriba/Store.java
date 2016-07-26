@@ -12,12 +12,15 @@ import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.zip.CRC32;
 
 /**
- * The main class.
+ * Main class.
  * <p>
- * Everything starts here!
+ * In escriba everything is asynchronous.
  */
 public class Store {
 
+	/**
+	 * Default ForkJoinThread Factory
+	 */
 	private static final ForkJoinPool.ForkJoinWorkerThreadFactory THREAD_FACTORY = pool -> {
 		ForkJoinWorkerThread thread = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
 		thread.setName("Escriba-WorkerThread-" + pool.getPoolSize());
@@ -30,19 +33,16 @@ public class Store {
 	final ExecutorService executorService;
 
 	@SuppressWarnings("unused")
-	public Store(File mapDBFile, DataDir[] dataDirs, int threads) {
-		this(mapDBFile, dataDirs, newExecutorService(threads));
+	public Store(File controlFile, DataDir[] dataDirs, int threads) {
+		this(controlFile, dataDirs, newExecutorService(threads));
 	}
 
-	public Store(File mapDBFile, DataDir[] dataDirs, ExecutorService executorService) {
-		try {
-			db = DBMaker.fileDB(mapDBFile)
-				.transactionEnable()
-				.make();
-		} catch (Exception e) {
-			throw new EscribaException.Unexpected("It's impossible create MapDB control at " + mapDBFile.getAbsolutePath(), e);
-		}
-
+	/**
+	 * @param controlFile     MapDB File used to control collections and values
+	 * @param dataDirs        Array of directories where escriba'll write values
+	 * @param executorService The main execute service
+	 */
+	public Store(File controlFile, DataDir[] dataDirs, ExecutorService executorService) {
 		if (dataDirs == null)
 			throw new EscribaException.IllegalArgument("dataDirs is null");
 
@@ -51,6 +51,12 @@ public class Store {
 
 		if (executorService == null)
 			throw new EscribaException.IllegalArgument("ExecutorService is null");
+
+		try {
+			db = DBMaker.fileDB(controlFile).transactionEnable().make();
+		} catch (Exception e) {
+			throw new EscribaException.Unexpected("It's impossible create MapDB control at " + controlFile.getAbsolutePath(), e);
+		}
 
 		dataDirPool = new DataDirPool.RoundRobin(dataDirs);
 		this.executorService = executorService;
