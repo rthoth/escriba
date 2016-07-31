@@ -36,7 +36,7 @@ Sometimes something wrong happen:
 	future throws ready error					${put("ftre")(written = writtenNOP, ready = (c) => throw new IllegalArgumentException("asd")) must throwAn[IllegalArgumentException]("asd")}
 	future throws written error				${put("ftwe")(ready = readyNOP, written = (w, b, c) => throw new IllegalStateException("dsa")) must throwAn[IllegalStateException]("dsa")}
 	future throws error error					${put("ftee")(ready = readyNOP, written = writtenNOP, error = (t) => throw new NullPointerException("rfv")) must not throwA[Throwable]()}
-	Status updating!								${put("ftre1", throwss = false)(ready = readyNOP, written = (w, b, c) => throw new IllegalStateException("asdf")).status === DataEntry.Status.Creating}
+	Status creating!								${put("ftre1", throwss = false)(ready = readyNOP, written = (w, b, c) => throw new IllegalStateException("asdf")).status === DataEntry.Status.Creating}
 """
 
 	//noinspection SpellCheckingInspection
