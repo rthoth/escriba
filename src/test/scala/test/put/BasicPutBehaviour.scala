@@ -76,7 +76,7 @@ Sometimes something wrong happen:
 
 		import scala.math._
 
-		put(s"putZeros-$length", "some-value", "text/plain")(
+		put(s"putZeros-$length", s"key-$length", "text/plain")(
 
 			ready = (control) => {
 				control.write(ByteBuffer.allocate(min(1024 * 512, length)))
@@ -93,14 +93,6 @@ Sometimes something wrong happen:
 					buffer.limit(min(1024 * 512, length - current))
 					control.write(buffer)
 				}
-			},
-
-			error = (error) => {
-
-			},
-
-			success = () => {
-
 			}
 		)
 	}
