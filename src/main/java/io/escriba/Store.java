@@ -70,7 +70,7 @@ public class Store {
 			if (collections.containsKey(collectionName))
 				return collections.get(collectionName);
 
-			if (create || db.exists(collectionName))
+			if (create)
 				try {
 					collections.put(collectionName, new HashCollection(collectionName, db, dataDirPool.copy(), executorService));
 				} catch (Exception e) {

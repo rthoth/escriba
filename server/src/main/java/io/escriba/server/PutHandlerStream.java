@@ -1,8 +1,7 @@
 package io.escriba.server;
 
-import io.escriba.Close;
 import io.escriba.DataEntry;
-import io.escriba.Write;
+import io.escriba.Putter;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -19,14 +18,13 @@ public class PutHandlerStream extends ChannelInboundHandlerAdapter {
 	private static final int MAX_FRAMES = 1024 * 512;
 	private ByteBuffer cache;
 	private final int cacheSize;
-	private Close close;
 	private CompositeByteBuf compositeBuffer;
+	private Putter.Control control;
 	private ChannelHandlerContext ctx;
 	private final LockedBlock lockedBlock = new LockedBlock();
 	private final Request request;
 	private boolean shouldClose;
 	private boolean shouldWrite;
-	private Write write;
 	private boolean writing;
 
 	@SuppressWarnings("unused")
@@ -48,7 +46,7 @@ public class PutHandlerStream extends ChannelInboundHandlerAdapter {
 			.ready(this::onReady)
 			.written(this::onWritten)
 			.error(this::onError)
-			.start()
+			.apply()
 		;
 	}
 
@@ -84,16 +82,15 @@ public class PutHandlerStream extends ChannelInboundHandlerAdapter {
 		lockedBlock.locked(throwable::printStackTrace);
 	}
 
-	private void onReady(Write write, Close close) throws Exception {
+	private void onReady(Putter.Control control) throws Exception {
 		lockedBlock.locked(() -> {
-			this.write = write;
-			this.close = close;
+			this.control = control;
 			shouldWrite = true;
 			writeOrClose();
 		});
 	}
 
-	private void onWritten(int written, ByteBuffer buffer, Write write, Close close) throws Exception {
+	private void onWritten(int written, ByteBuffer buffer, Putter.Control control) throws Exception {
 		lockedBlock.locked(() -> {
 			compositeBuffer.skipBytes(written).discardReadBytes();
 			shouldWrite = true;
@@ -104,7 +101,7 @@ public class PutHandlerStream extends ChannelInboundHandlerAdapter {
 
 	private void writeOrClose() throws Exception {
 
-		if (write == null || compositeBuffer == null)
+		if (control == null || compositeBuffer == null)
 			return;
 
 		if (shouldWrite && compositeBuffer.readableBytes() >= cacheSize) {
@@ -117,7 +114,8 @@ public class PutHandlerStream extends ChannelInboundHandlerAdapter {
 			compositeBuffer.resetReaderIndex();
 
 			cache.flip();
-			write.apply(cache);
+//			write.apply(cache);
+			control.write(cache);
 			return;
 		}
 
@@ -131,10 +129,12 @@ public class PutHandlerStream extends ChannelInboundHandlerAdapter {
 				compositeBuffer.resetReaderIndex();
 
 				cache.flip();
-				write.apply(cache);
+//				write.apply(cache);
+				control.write(cache);
 			} else {
 				try {
-					close.apply();
+//					close.apply();
+					control.close();
 				} catch (Exception e) {
 					// TODO: What to do?
 				} finally {

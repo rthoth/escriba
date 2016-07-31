@@ -36,7 +36,8 @@ public class HashCollection implements Collection {
 		return new HashGetter(this, key);
 	}
 
-	DataEntry getEntry(String key) {
+	@Override
+	public DataEntry getEntry(String key) {
 		return map.get(key);
 	}
 

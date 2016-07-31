@@ -1,22 +1,75 @@
 package io.escriba;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.Future;
 
+/**
+ * It prepares a put command
+ */
 public interface Putter {
 
+	/**
+	 * Put and return DataEntry when completed.
+	 *
+	 * @return
+	 */
+	Future<DataEntry> apply();
+
+	/**
+	 * Set errorHandler
+	 *
+	 * @param errorHandler
+	 * @return
+	 */
 	Putter error(ErrorHandler errorHandler);
 
+	/**
+	 * Set readyHandler. This handler is invoked when a put command is ready to start!
+	 *
+	 * @param readyHandler
+	 * @return
+	 */
 	Putter ready(ReadyHandler readyHandler);
 
-	void start();
+	/**
+	 * Set successHandler. This handler is invoked when close is invoked and when no failures!
+	 *
+	 * @param successHandler
+	 * @return
+	 */
+	Putter success(SuccessHandler successHandler);
 
+	/**
+	 * Set WrittenHandler. This handler is invoked when a write command hasn't a handler!
+	 *
+	 * @param writtenHandler
+	 * @return
+	 */
 	Putter written(WrittenHandler writtenHandler);
 
+	/**
+	 * It is used to execute commands in actual put command!
+	 */
+	interface Control {
+		void close();
+
+		@SuppressWarnings("unused")
+		void write(ByteBuffer buffer, long position);
+
+		@SuppressWarnings("unused")
+		void write(ByteBuffer buffer, WrittenHandler handler);
+
+		@SuppressWarnings("unused")
+		void write(ByteBuffer buffer, long position, WrittenHandler handler);
+
+		void write(ByteBuffer buffer);
+	}
+
 	interface ReadyHandler {
-		void apply(Write write, Close close) throws Exception;
+		void apply(Control control) throws Exception;
 	}
 
 	interface WrittenHandler {
-		void apply(int written, ByteBuffer buffer, Write write, Close close) throws Exception;
+		void apply(int written, ByteBuffer buffer, Control control) throws Exception;
 	}
 }
