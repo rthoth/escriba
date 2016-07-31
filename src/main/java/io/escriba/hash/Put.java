@@ -1,180 +1,249 @@
 package io.escriba.hash;
 
 import io.escriba.*;
-import io.escriba.DataEntry.Status;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.channels.CompletionHandler;
 import java.nio.channels.FileLock;
-import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
-public class Put implements Close {
+public class Put implements Putter.Control {
 
-	private FileChannel channel;
+	private static final CompletionHandler<FileLock, Put> LOCK_HANDLER = new CompletionHandler<FileLock, Put>() {
+		@Override
+		public void completed(FileLock lock, Put put) {
+			put.locked(lock);
+		}
+
+		@Override
+		public void failed(Throwable throwable, Put put) {
+			put.error(throwable);
+			put.closeQuietly();
+		}
+	};
+
+	private static final Set<OpenOption> OPEN_OPTIONS = new HashSet<>(Arrays.asList(StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING));
+
+	private static final CompletionHandler<Integer, T3<Put, ByteBuffer, Putter.WrittenHandler>> WRITE_HANDLER_NO_UPDATE_POSITION = new CompletionHandler<Integer, T3<Put, ByteBuffer, Putter.WrittenHandler>>() {
+		@Override
+		public void completed(Integer total, T3<Put, ByteBuffer, Putter.WrittenHandler> t3) {
+			Putter.WrittenHandler handler = t3.c == null ? t3.a.writtenHandler : t3.c;
+
+			try {
+				handler.apply(total, t3.b, t3.a);
+			} catch (Exception e) {
+				t3.a.error(e);
+			}
+
+		}
+
+		@Override
+		public void failed(Throwable throwable, T3<Put, ByteBuffer, Putter.WrittenHandler> t3) {
+			t3.a.error(throwable);
+		}
+	};
+
+	private static final CompletionHandler<Integer, T3<Put, ByteBuffer, Putter.WrittenHandler>> WRITE_HANDLER_UPDATE_POSITION = new CompletionHandler<Integer, T3<Put, ByteBuffer, Putter.WrittenHandler>>() {
+		@Override
+		public void completed(Integer total, T3<Put, ByteBuffer, Putter.WrittenHandler> t3) {
+			t3.a.position += total;
+
+			WRITE_HANDLER_NO_UPDATE_POSITION.completed(total, t3);
+		}
+
+		@Override
+		public void failed(Throwable throwable, T3<Put, ByteBuffer, Putter.WrittenHandler> t3) {
+			t3.a.error(throwable);
+		}
+	};
+
+
+	private AsynchronousFileChannel channel;
 	private final HashCollection collection;
+	private final CompletableFuture<DataEntry> completable;
 	private DataEntry entry;
 	private final ErrorHandler errorHandler;
+	private final ProxyFuture<DataEntry> future;
 	private final String key;
 	private FileLock lock;
 	private final String mediaType;
+	private long position;
 	private final Putter.ReadyHandler readyHandler;
-	private Write write;
+	private final SuccessHandler successHandler;
 	private final Putter.WrittenHandler writtenHandler;
 
-	public Put(HashCollection collection, String key, String mediaType, Putter.ReadyHandler readyHandler, Putter.WrittenHandler writtenHandler, ErrorHandler errorHandler) {
+	public Put(HashCollection collection, String key, String mediaType, Putter.ReadyHandler readyHandler, Putter.WrittenHandler writtenHandler, ErrorHandler errorHandler, SuccessHandler successHandler) {
 		this.collection = collection;
 		this.key = key;
 		this.mediaType = mediaType;
 		this.readyHandler = readyHandler;
 		this.writtenHandler = writtenHandler;
 		this.errorHandler = errorHandler;
+		this.successHandler = successHandler;
 
-		if (writtenHandler != null)
-			collection.executor.submit(this::lockFile);
-		else
-			throw new EscribaException.IllegalArgument("The writtenHandler must be defined");
+		if (readyHandler == null)
+			throw new EscribaException.IllegalArgument("The readyHandler must be defined!");
+
+		if (writtenHandler != null) {
+			future = new ProxyFuture(completable = new CompletableFuture<>());
+			collection.executor.submit(this::openAndLockFile);
+		} else
+			throw new EscribaException.IllegalArgument("The writtenHandler must be defined!");
 	}
 
 	@Override
-	public void apply() throws Exception {
-		if (isClosed())
-			return;
+	public void close() {
+		if (channel != null && channel.isOpen()) {
 
-		try {
-			Date date = new Date();
+			try {
+				entry = entry.copy()
+					.size(channel.size())
+					.access(new Date())
+					.status(DataEntry.Status.Ok)
+					.end();
 
-			entry = entry.copy()
-				.size(channel.size())
-				.status(Status.Ok)
-				.mediaType(mediaType)
-				.update(date)
-				.access(date)
-				.end()
-			;
+				collection.updateEntry(key, entry);
+			} catch (Exception e) {
+				error(e);
+				return;
+			}
 
-			close0();
-			collection.updateEntry(key, entry);
-		} catch (Exception e) {
-			if (errorHandler != null)
-				try {
-					errorHandler.apply(e);
-				} catch (Exception e1) {
-					// TODO: Log?
-				}
+			try {
+				close0();
+			} catch (Exception e) {
+				error(e);
+				return;
+			}
+
+			try {
+				successHandler.apply();
+			} catch (Exception e) {
+				// TODO: Log?
+			}
+
+			completable.complete(entry);
 		}
 	}
 
-	private void close0() throws Exception {
-		if (lock != null) {
+	private void close0() throws IOException {
+		if (lock != null)
 			lock.close();
-			lock = null;
-		}
 
-		if (channel != null && channel.isOpen()) {
+		lock = null;
+
+		if (channel != null && channel.isOpen())
 			channel.close();
-			channel = null;
-		}
+
+		channel = null;
 	}
 
 	private void closeQuietly() {
 		try {
 			close0();
-		} catch (Exception e) {
-			// TODO: Log e?
+		} catch (IOException e) {
+			// TODO: Log?
 		}
 	}
 
-	private void error(Exception throwable) {
-		if (isClosed())
-			return;
+	private void error(Throwable throwable) {
+		if (channel != null && channel.isOpen()) {
+			closeQuietly();
 
-		closeQuietly();
-
-		if (errorHandler != null)
 			try {
-				errorHandler.apply(throwable);
+				if (errorHandler != null)
+					errorHandler.apply(throwable);
 			} catch (Exception e) {
 				// TODO: Log?
 			}
+
+			completable.completeExceptionally(throwable);
+		}
 	}
 
-	private boolean isClosed() {
-		return channel == null || !channel.isOpen();
+	public Future<DataEntry> future() {
+		return future;
 	}
 
-	private void lockFile() {
+	private void locked(FileLock lock) {
+		this.lock = lock;
 
 		try {
-
-			entry = collection.getOrCreateEntry(key);
-
-			if (entry.status != Status.Creating)
-				collection.updateEntry(key, entry = entry.copy().status(Status.Updating).end());
-
-			Path path = collection.getPath(key);
-			Path parent = path.getParent();
-
-			if (!Files.exists(parent))
-				Files.createDirectories(parent);
-
-			channel = FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
-			lock = channel.lock();
+			readyHandler.apply(this);
 		} catch (Exception e) {
+			error(e);
+		}
+	}
+
+	private void openAndLockFile() {
+		try {
+			entry = collection.getEntry(key);
+
+			entry = (entry == null) ?
+				collection.getOrCreateEntry(key).copy()
+					.status(DataEntry.Status.Creating)
+					.end()
+				:
+				collection.getOrCreateEntry(key).copy()
+					.mediaType(mediaType)
+					.status(DataEntry.Status.Updating)
+					.end();
+
+		} catch (Throwable throwable) {
+			error(throwable);
+			return;
+		}
+
+		try {
+			Path path = collection.getPath(key);
+
+			File parent = path.getParent().toFile();
+			if (!parent.exists())
+				parent.mkdirs();
+
+			channel = AsynchronousFileChannel.open(path, OPEN_OPTIONS, collection.executor);
+		} catch (Throwable throwable) {
 			if (errorHandler != null)
 				try {
-					errorHandler.apply(e);
-				} catch (Exception e1) {
+					errorHandler.apply(throwable);
+				} catch (Exception e) {
 					// TODO: Log?
 				}
+
+			completable.completeExceptionally(throwable);
 			return;
 		}
 
-		//noinspection CodeBlock2Expr
-		write = buffer -> {
-			if (isClosed())
-				return;
-			//noinspection CodeBlock2Expr
-			collection.executor.submit(() -> {
-				write(buffer);
-			});
-		};
-
-		try {
-			if (readyHandler != null)
-				readyHandler.apply(write, this);
-			else
-				writtenHandler.apply(0, null, write, this);
-		} catch (Exception e) {
-			error(e);
-		}
+		channel.lock(this, LOCK_HANDLER);
 	}
 
-	private void write(ByteBuffer buffer) {
-		if (isClosed())
-			return;
-
-		int written;
-		try {
-			written = channel.write(buffer);
-		} catch (Exception e) {
-			error(e);
-			return;
-		}
-
-		written(written, buffer);
+	@Override
+	public void write(ByteBuffer buffer, long position) {
+		channel.write(buffer, position, T3.of(this, buffer, null), WRITE_HANDLER_NO_UPDATE_POSITION);
 	}
 
-	private void written(int written, ByteBuffer buffer) {
-		if (isClosed())
-			return;
+	@Override
+	public void write(ByteBuffer buffer, Putter.WrittenHandler handler) {
+		channel.write(buffer, position, T3.of(this, buffer, handler), WRITE_HANDLER_UPDATE_POSITION);
+	}
 
-		try {
-			writtenHandler.apply(written, buffer, write, this);
-		} catch (Exception e) {
-			error(e);
-		}
+	@Override
+	public void write(ByteBuffer buffer, long position, Putter.WrittenHandler handler) {
+		channel.write(buffer, position, T3.of(this, buffer, handler), WRITE_HANDLER_NO_UPDATE_POSITION);
+	}
+
+	@Override
+	public void write(ByteBuffer buffer) {
+		channel.write(buffer, position, T3.of(this, buffer, null), WRITE_HANDLER_UPDATE_POSITION);
 	}
 }

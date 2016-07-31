@@ -1,6 +1,7 @@
 allprojects {
     apply plugin: 'java'
     apply plugin: 'maven-publish'
+    apply plugin: 'scala'
 
     group 'io.escriba'
     version '0.1.0'
@@ -8,16 +9,22 @@ allprojects {
     repositories {
         mavenCentral()
         jcenter()
+
+        maven {
+            url "https://oss.sonatype.org/content/repositories/releases"
+        }
     }
 
 
     test {
-        useTestNG()
+        testLogging.showStandardStreams = true
     }
 
     dependencies {
-        testCompile 'org.assertj:assertj-core:3.4.1'
-        testCompile 'org.testng:testng:6.9.10'
+        testCompile "org.scala-lang:scala-library:2.11.8"
+        testCompile "org.specs2:specs2-core_2.11:3.8.4"
+        testCompile "org.specs2:specs2-junit_2.11:3.8.4"
+        testCompile "junit:junit:4.12"
     }
 
     task sourceJar(type: Jar) {
@@ -55,7 +62,7 @@ allprojects {
 }
 
 dependencies {
-    compile 'org.mapdb:mapdb:3.0.0-RC2'
+    compile 'org.mapdb:mapdb:3.0.1'
 }
 
 
