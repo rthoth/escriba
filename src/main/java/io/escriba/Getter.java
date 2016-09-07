@@ -1,6 +1,7 @@
 package io.escriba;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.Future;
 
 public interface Getter {
 
@@ -10,13 +11,32 @@ public interface Getter {
 
 	Getter ready(ReadyHandler readyHandler);
 
-	void start();
+	Future<DataEntry> start();
+
+	Getter success(SuccessHandler successHandler);
+
+	interface Control {
+		@SuppressWarnings("unused")
+		void close();
+
+		@SuppressWarnings("unused")
+		void read(ByteBuffer buffer);
+
+		@SuppressWarnings("unused")
+		void read(ByteBuffer buffer, ReadHandler readHandler);
+
+		@SuppressWarnings("unused")
+		void read(ByteBuffer buffer, long position);
+
+		@SuppressWarnings("unused")
+		void read(ByteBuffer buffer, long position, ReadHandler readHandler);
+	}
 
 	interface ReadHandler {
-		void apply(int bytes, ByteBuffer buffer, Read read, Close close) throws Exception;
+		void apply(int bytes, ByteBuffer buffer, Control control) throws Exception;
 	}
 
 	interface ReadyHandler {
-		void apply(DataEntry entry, Read read, Close close) throws Exception;
+		void apply(DataEntry entry, Control control) throws Exception;
 	}
 }

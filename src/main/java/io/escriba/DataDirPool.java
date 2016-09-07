@@ -6,7 +6,7 @@ public interface DataDirPool<T extends DataDirPool> {
 
 	DataDir get(int index);
 
-	DataDir next();
+	int nextIndex();
 
 	class RoundRobin implements DataDirPool<RoundRobin> {
 		private final T2<Integer, DataDir>[] entries;
@@ -22,12 +22,11 @@ public interface DataDirPool<T extends DataDirPool> {
 			}
 
 			entries = new T2[dataDirs.length];
-			int i = 0, ceil = -1;
-			for (DataDir dataDir : dataDirs) {
-				dataDir = new DataDir(dataDir.path, dataDir.weight / min, i);
+
+			for (int i = 0; i < dataDirs.length; i++) {
+				final DataDir dataDir = new DataDir(dataDirs[i].path, dataDirs[i].weight / min);
 				total += dataDir.weight;
-				entries[i] = new T2(ceil + dataDir.weight, dataDir);
-				ceil = entries[i++].a;
+				entries[i] = T2.of(total - 1, dataDir);
 			}
 
 			this.total = total;
@@ -45,22 +44,26 @@ public interface DataDirPool<T extends DataDirPool> {
 
 		@Override
 		public DataDir get(int index) {
-			if (index < entries.length)
+			if (index > -1 && index < entries.length)
 				return entries[index].b;
 			else
 				throw new EscribaException.IllegalArgument("Index out of range!");
 		}
 
 		@Override
-		public DataDir next() {
+		public int nextIndex() {
 			synchronized (this) {
 				position = (position + 1) % total;
 			}
 
-			for (T2<Integer, DataDir> entry : entries) {
-				if (position <= entry.a)
-					return entry.b;
-			}
+//			for (T2<Integer, DataDir> entry : entries) {
+//				if (position <= entry.a)
+//					return entry.a;
+//			}
+
+			for (int i = 0; i < entries.length; i++)
+				if (position <= entries[i].a)
+					return i;
 
 			throw new EscribaException.Unexpected("DataDirPool.RoundRobin");
 		}

@@ -49,7 +49,7 @@ public class HashCollection implements Collection {
 			entry = DataEntry.DEFAULT
 				.copy()
 				.path(nextPath())
-				.dataDirIndex(dataDirPool.next().index)
+				.dataDirIndex(dataDirPool.nextIndex())
 				.end()
 			;
 			map.put(key, entry);

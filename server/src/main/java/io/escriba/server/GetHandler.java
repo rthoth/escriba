@@ -1,19 +1,8 @@
 package io.escriba.server;
 
-import io.escriba.Close;
-import io.escriba.DataEntry;
 import io.escriba.Getter;
-import io.escriba.Read;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.LastHttpContent;
-
-import java.nio.ByteBuffer;
-
-import static io.netty.channel.ChannelFutureListener.CLOSE;
 
 public class GetHandler extends ChannelInboundHandlerAdapter {
 
@@ -45,46 +34,13 @@ public class GetHandler extends ChannelInboundHandlerAdapter {
 			this.ctx = ctx;
 			this.chunkSize = chunkSize;
 
-			getter
-				.ready(this::onReady)
-				.read(this::onRead)
-				.error(this::onError)
-				.start()
-			;
+//			getter
+//				.ready(this::onReady)
+//				.read(this::onRead)
+//				.error(this::onError)
+//				.start()
+//			;
 		}
 
-		private void onError(Throwable throwable) {
-			// TODO: Log?
-			throwable.printStackTrace();
-			ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT).addListener(CLOSE);
-		}
-
-		private void onRead(int bytes, ByteBuffer buffer, Read read, Close close) throws Exception {
-			if (bytes >= 0) {
-
-				if (bytes > 0) {
-					buffer.limit(bytes).rewind();
-					ByteBuf buf = ctx.alloc().buffer(bytes);
-					buf.writeBytes(buffer);
-					ctx.writeAndFlush(buf);
-				}
-
-				buffer.clear();
-				read.apply(buffer);
-			} else {
-				try {
-					close.apply();
-				} finally {
-					ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT).addListener(CLOSE);
-				}
-			}
-		}
-
-		private void onReady(DataEntry entry, Read read, Close close) throws Exception {
-			HttpResponse httpResponse = Http.chunked(Http.ok(entry.mediaType));
-			httpResponse.headers().set(HttpHeaderNames.CONTENT_LENGTH, entry.size);
-			ctx.writeAndFlush(httpResponse);
-			read.apply(ByteBuffer.allocate(chunkSize));
-		}
 	}
 }

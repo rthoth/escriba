@@ -14,7 +14,7 @@ import java.util.zip.CRC32;
 /**
  * Main class.
  * <p>
- * In escriba everything is asynchronous.
+ * In eScriba everything is asynchronous.
  */
 public class Store {
 
@@ -23,12 +23,12 @@ public class Store {
 	 */
 	private static final ForkJoinPool.ForkJoinWorkerThreadFactory THREAD_FACTORY = pool -> {
 		ForkJoinWorkerThread thread = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
-		thread.setName("Escriba-WorkerThread-" + pool.getPoolSize());
+		thread.setName("eScriba-WorkerThread-" + pool.getPoolSize());
 		return thread;
 	};
 
 	private final WeakHashMap<String, HashCollection> collections = new WeakHashMap<>();
-	private final DataDirPool.RoundRobin dataDirPool;
+	private final DataDirPool dataDirPool;
 	private final DB db;
 	final ExecutorService executorService;
 
@@ -38,8 +38,8 @@ public class Store {
 	}
 
 	/**
-	 * @param controlFile     MapDB File used to control collections and values
-	 * @param dataDirs        Array of directories where escriba'll write values
+	 * @param controlFile     MapDB File used to control collections and values.
+	 * @param dataDirs        Array of directories where escriba will write values.
 	 * @param executorService The main execute service
 	 */
 	public Store(File controlFile, DataDir[] dataDirs, ExecutorService executorService) {

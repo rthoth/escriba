@@ -1,7 +1,11 @@
 package io.escriba.hash;
 
+import io.escriba.DataEntry;
 import io.escriba.ErrorHandler;
 import io.escriba.Getter;
+import io.escriba.SuccessHandler;
+
+import java.util.concurrent.Future;
 
 public class HashGetter implements Getter {
 	private final HashCollection collection;
@@ -9,6 +13,7 @@ public class HashGetter implements Getter {
 	private final String key;
 	private ReadHandler readHandler;
 	private ReadyHandler readyHandler;
+	private SuccessHandler successHandler;
 
 	public HashGetter(HashCollection collection, String key) {
 		this.collection = collection;
@@ -34,7 +39,13 @@ public class HashGetter implements Getter {
 	}
 
 	@Override
-	public void start() {
-		new Get(collection, key, readyHandler, readHandler, errorHandler);
+	public Future<DataEntry> start() {
+		return new Get(collection, key, readyHandler, readHandler, errorHandler, successHandler).future();
+	}
+
+	@Override
+	public Getter success(SuccessHandler successHandler) {
+		this.successHandler = successHandler;
+		return this;
 	}
 }

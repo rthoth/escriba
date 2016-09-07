@@ -6,7 +6,7 @@ import java.nio.ByteBuffer
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
-import io.escriba.Putter.{Control, ReadyHandler, WrittenHandler}
+import io.escriba.Putter.WrittenHandler
 import io.escriba._
 
 import scala.concurrent.duration.Duration
@@ -31,8 +31,13 @@ trait Help {
 	} else
 		null
 
-	implicit def f2PutterReadyHandler(f: (Putter.Control) => Unit): Putter.ReadyHandler = if (f != null) new ReadyHandler {
-		override def apply(control: Control): Unit = f(control)
+	implicit def f2GetterReadyHandler(f: (DataEntry, Getter.Control) => Unit): Getter.ReadyHandler = if (f != null) new Getter.ReadyHandler {
+		override def apply(entry: DataEntry, control: Getter.Control): Unit = f(entry, control)
+	} else
+		null
+
+	implicit def f2PutterReadyHandler(f: (Putter.Control) => Unit): Putter.ReadyHandler = if (f != null) new Putter.ReadyHandler {
+		override def apply(control: Putter.Control): Unit = f(control)
 	} else
 		null
 
