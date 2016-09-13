@@ -1,51 +1,56 @@
 package io.escriba;
 
+import java.nio.file.Path;
+
 public interface DataDirPool<T extends DataDirPool> {
 
 	T copy();
 
-	DataDir get(int index);
+	Path get(int index);
 
 	int nextIndex();
 
 	class RoundRobin implements DataDirPool<RoundRobin> {
-		private final T2<Integer, DataDir>[] entries;
+		private final T2<Integer, Path>[] paths;
 		private int position = -1;
 		private final int total;
 
-		public RoundRobin(DataDir[] dataDirs) {
+		public RoundRobin(T2<Path, Integer>[] paths) {
+
 			int min = Integer.MAX_VALUE, total = 0;
 
-			for (DataDir dataDir : dataDirs) {
-				if (dataDir.weight < min)
-					min = dataDir.weight;
+			for (T2<Path, Integer> tuple : paths) {
+				if (tuple.b <= 0)
+					throw new EscribaException.IllegalArgument("Invalid weight: " + tuple);
+				else if (tuple.b < min)
+					min = tuple.b;
 			}
 
-			entries = new T2[dataDirs.length];
+			this.paths = new T2[paths.length];
 
-			for (int i = 0; i < dataDirs.length; i++) {
-				final DataDir dataDir = new DataDir(dataDirs[i].path, dataDirs[i].weight / min);
-				total += dataDir.weight;
-				entries[i] = T2.of(total - 1, dataDir);
+			for (int i = 0; i < paths.length; i++) {
+				int weight = paths[i].b / min;
+				total += weight;
+				this.paths[i] = T2.of(weight, paths[i].a);
 			}
 
 			this.total = total;
 		}
 
-		private RoundRobin(T2<Integer, DataDir>[] entries, int total) {
-			this.entries = entries;
+		private RoundRobin(T2<Integer, Path>[] paths, int total) {
+			this.paths = paths;
 			this.total = total;
 		}
 
 		@Override
 		public RoundRobin copy() {
-			return new RoundRobin(entries, total);
+			return new RoundRobin(paths, total);
 		}
 
 		@Override
-		public DataDir get(int index) {
-			if (index > -1 && index < entries.length)
-				return entries[index].b;
+		public Path get(int index) {
+			if (index > -1 && index < paths.length)
+				return paths[index].b;
 			else
 				throw new EscribaException.IllegalArgument("Index out of range!");
 		}
@@ -56,13 +61,13 @@ public interface DataDirPool<T extends DataDirPool> {
 				position = (position + 1) % total;
 			}
 
-//			for (T2<Integer, DataDir> entry : entries) {
+//			for (T2<Integer, DataDir> entry : paths) {
 //				if (position <= entry.a)
 //					return entry.a;
 //			}
 
-			for (int i = 0; i < entries.length; i++)
-				if (position <= entries[i].a)
+			for (int i = 0; i < paths.length; i++)
+				if (position <= paths[i].a)
 					return i;
 
 			throw new EscribaException.Unexpected("DataDirPool.RoundRobin");

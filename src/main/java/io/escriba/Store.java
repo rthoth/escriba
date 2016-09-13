@@ -5,6 +5,7 @@ import org.mapdb.DB;
 import org.mapdb.DBMaker;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.WeakHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
@@ -33,7 +34,7 @@ public class Store {
 	final ExecutorService executorService;
 
 	@SuppressWarnings("unused")
-	public Store(File controlFile, DataDir[] dataDirs, int threads) {
+	public Store(File controlFile, T2<Path, Integer>[] dataDirs, int threads) {
 		this(controlFile, dataDirs, newExecutorService(threads));
 	}
 
@@ -42,7 +43,7 @@ public class Store {
 	 * @param dataDirs        Array of directories where escriba will write values.
 	 * @param executorService The main execute service
 	 */
-	public Store(File controlFile, DataDir[] dataDirs, ExecutorService executorService) {
+	public Store(File controlFile, T2<Path, Integer>[] dataDirs, ExecutorService executorService) {
 		if (dataDirs == null)
 			throw new EscribaException.IllegalArgument("dataDirs is null");
 

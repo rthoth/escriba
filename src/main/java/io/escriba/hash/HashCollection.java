@@ -61,7 +61,7 @@ public class HashCollection implements Collection {
 	public Path getPath(String key) {
 		DataEntry dataEntry = getOrCreateEntry(key);
 
-		Path path = dataDirPool.get(dataEntry.dataDirIndex).path.resolve(Store.collectionDirName(name));
+		Path path = dataDirPool.get(dataEntry.dataDirIndex).resolve(Store.collectionDirName(name));
 
 		if (!Files.exists(path))
 			try {
