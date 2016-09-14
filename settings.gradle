@@ -1,1 +1,1 @@
-include "client", "server"
+include "escriba_client", "escriba_server"
