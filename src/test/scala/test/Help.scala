@@ -6,6 +6,7 @@ import java.nio.ByteBuffer
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
+import io.escriba.Getter.Control
 import io.escriba.Putter.WrittenHandler
 import io.escriba._
 
@@ -31,7 +32,12 @@ trait Help {
 	} else
 		null
 
-	implicit def f2GetterReadyHandler(f: (DataEntry, Getter.Control) => Unit): Getter.ReadyHandler = if (f != null) new Getter.ReadyHandler {
+	implicit def f2GetterReadHandler[R](f: (Int, ByteBuffer, Getter.Control) => R): Getter.ReadHandler = if (f != null) new Getter.ReadHandler {
+		def apply(bytes: Int, buffer: ByteBuffer, control: Control): Unit = f(bytes, buffer, control)
+	} else
+		null
+
+	implicit def f2GetterReadyHandler[R](f: (DataEntry, Getter.Control) => R): Getter.ReadyHandler = if (f != null) new Getter.ReadyHandler {
 		override def apply(entry: DataEntry, control: Getter.Control): Unit = f(entry, control)
 	} else
 		null
@@ -46,17 +52,17 @@ trait Help {
 	} else
 		null
 
-	implicit def f2PutterWrittenHandler(f: (Int, ByteBuffer, Putter.Control) => Unit): Putter.WrittenHandler = if (f != null) new WrittenHandler {
+	implicit def f2PutterWrittenHandler[R](f: (Int, ByteBuffer, Putter.Control) => R): Putter.WrittenHandler = if (f != null) new WrittenHandler {
 		override def apply(written: Int, buffer: ByteBuffer, control: Putter.Control): Unit = f(written, buffer, control)
 	} else
 		null
 
-	def newDir(name: String) = new File(base, name) before (_.mkdirs())
+	def newDir(name: String) = (new File(base, name) before (_.mkdirs())).toPath
 
 	def newFile(name: String) = new File(base, name)
 
 	def store(name: String): Store = {
-		new Store(newFile(name + "-store"), DataDir.of((Integer.valueOf(1), newDir(name + "-datadir"))), 1)
+		new Store(newFile(name + "-store"), Array(T2.of(newDir(name + "-datadir"), Integer.valueOf(1))), 1)
 	}
 
 	implicit def t2T2[A, B](t: (A, B)): T2[A, B] = T2.of(t._1, t._2)

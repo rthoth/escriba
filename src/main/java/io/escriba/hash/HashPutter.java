@@ -24,7 +24,7 @@ public class HashPutter implements Putter {
 	}
 
 	@Override
-	public Future<DataEntry> apply() {
+	public Future<DataEntry> start() {
 		return new Put(collection, key, mediaType, readyHandler, writtenHandler, errorHandler, successHandler).future();
 	}
 

@@ -132,7 +132,11 @@ public class Get implements Getter.Control {
 	}
 
 	private void error(Throwable throwable) {
-		if (isOpen()) {
+		error(throwable, false);
+	}
+
+	private void error(Throwable throwable, boolean invoke) {
+		if (invoke || isOpen()) {
 
 			closeQuietly();
 
@@ -159,14 +163,7 @@ public class Get implements Getter.Control {
 		try {
 			channel = AsynchronousFileChannel.open(collection.getPath(key), OPEN_SET, collection.executor);
 		} catch (Exception e) {
-			if (errorHandler != null)
-				try {
-					errorHandler.apply(e);
-				} catch (Exception e1) {
-					// TODO: Log?
-				}
-
-			completable.completeExceptionally(e);
+			error(e);
 			return;
 		}
 

@@ -1,7 +1,10 @@
 package io.escriba.hash;
 
+import io.escriba.DataEntry;
 import io.escriba.ErrorHandler;
 import io.escriba.Remover;
+
+import java.util.concurrent.Future;
 
 public class HashRemover implements Remover {
 	private final HashCollection collection;
@@ -27,8 +30,7 @@ public class HashRemover implements Remover {
 	}
 
 	@Override
-	public Remover start() {
-		new Remove(collection, key, removedHandler, errorHandler);
-		return this;
+	public Future<DataEntry> start() {
+		return new Remove(collection, key, removedHandler, errorHandler).future();
 	}
 }

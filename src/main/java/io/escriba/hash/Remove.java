@@ -1,18 +1,19 @@
 package io.escriba.hash;
 
-import io.escriba.DataEntry;
+import io.escriba.*;
 import io.escriba.DataEntry.Status;
-import io.escriba.ErrorHandler;
-import io.escriba.EscribaException;
-import io.escriba.Remover;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 public class Remove {
 	private final HashCollection collection;
+	private final CompletableFuture<DataEntry> completable;
 	private DataEntry entry;
 	private final ErrorHandler errorHandler;
+	private final Future<DataEntry> future;
 	private final String key;
 	private final Remover.RemovedHandler removedHandler;
 
@@ -21,6 +22,8 @@ public class Remove {
 		this.key = key;
 		this.removedHandler = removedHandler;
 		this.errorHandler = errorHandler;
+
+		this.future = new ProxyFuture<>(completable = new CompletableFuture<>());
 
 		if (removedHandler != null)
 			collection.executor.submit(this::removeFile);
@@ -35,7 +38,14 @@ public class Remove {
 			} catch (Exception e) {
 				// TODO: Log?
 			}
+
+		completable.completeExceptionally(throwable);
 	}
+
+	public Future<DataEntry> future() {
+		return future;
+	}
+
 
 	private void removeFile() {
 		entry = collection.getEntry(key);
@@ -88,5 +98,6 @@ public class Remove {
 			error(e);
 		}
 
+		completable.complete(entry.copy().status(Status.Deleted).end());
 	}
 }

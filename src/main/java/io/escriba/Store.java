@@ -38,18 +38,20 @@ public class Store {
 		this(controlFile, dataDirs, newExecutorService(threads));
 	}
 
-	/**
-	 * @param controlFile     MapDB File used to control collections and values.
-	 * @param dataDirs        Array of directories where escriba will write values.
-	 * @param executorService The main execute service
-	 */
+	@SuppressWarnings("unused")
+	public Store(File controlFile, Path dataDir, int threads) {
+		this(controlFile, dataDir, newExecutorService(threads));
+	}
+
+	public Store(File controlFile, Path dataDir, ExecutorService executorService) {
+		this(controlFile, new DataDirPool.Fixed(dataDir), executorService);
+	}
+
 	public Store(File controlFile, T2<Path, Integer>[] dataDirs, ExecutorService executorService) {
-		if (dataDirs == null)
-			throw new EscribaException.IllegalArgument("dataDirs is null");
+		this(controlFile, new DataDirPool.RoundRobin(dataDirs), executorService);
+	}
 
-		if (dataDirs.length == 0)
-			throw new EscribaException.IllegalArgument("dataDirs don't have elements");
-
+	public Store(File controlFile, DataDirPool dataDirPool, ExecutorService executorService) {
 		if (executorService == null)
 			throw new EscribaException.IllegalArgument("ExecutorService is null");
 
@@ -59,7 +61,7 @@ public class Store {
 			throw new EscribaException.Unexpected("It's impossible create MapDB control at " + controlFile.getAbsolutePath(), e);
 		}
 
-		dataDirPool = new DataDirPool.RoundRobin(dataDirs);
+		this.dataDirPool = dataDirPool.copy();
 		this.executorService = executorService;
 	}
 

@@ -22,8 +22,7 @@ allprojects {
 
     dependencies {
         testCompile "org.scala-lang:scala-library:2.11.8"
-        testCompile "org.specs2:specs2-core_2.11:3.8.4"
-        testCompile "org.specs2:specs2-junit_2.11:3.8.4"
+        testCompile "org.scalatest:scalatest_2.11:3.0.0"
         testCompile "junit:junit:4.12"
     }
 

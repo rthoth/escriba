@@ -127,7 +127,8 @@ public class Put implements Putter.Control {
 			}
 
 			try {
-				successHandler.apply();
+				if (successHandler != null)
+					successHandler.apply();
 			} catch (Exception e) {
 				// TODO: Log?
 			}
@@ -157,7 +158,11 @@ public class Put implements Putter.Control {
 	}
 
 	private void error(Throwable throwable) {
-		if (channel != null && channel.isOpen()) {
+		error(throwable, false);
+	}
+
+	private void error(Throwable throwable, boolean invoke) {
+		if (invoke || (channel != null && channel.isOpen())) {
 			closeQuietly();
 
 			try {
@@ -191,16 +196,17 @@ public class Put implements Putter.Control {
 
 			entry = (entry == null) ?
 				collection.getOrCreateEntry(key).copy()
+					.mediaType(mediaType)
 					.status(DataEntry.Status.Creating)
 					.end()
 				:
-				collection.getOrCreateEntry(key).copy()
+				entry.copy()
 					.mediaType(mediaType)
 					.status(DataEntry.Status.Updating)
 					.end();
 
 		} catch (Throwable throwable) {
-			error(throwable);
+			error(throwable, true);
 			return;
 		}
 
@@ -213,14 +219,7 @@ public class Put implements Putter.Control {
 
 			channel = AsynchronousFileChannel.open(path, OPEN_OPTIONS, collection.executor);
 		} catch (Throwable throwable) {
-			if (errorHandler != null)
-				try {
-					errorHandler.apply(throwable);
-				} catch (Exception e) {
-					// TODO: Log?
-				}
-
-			completable.completeExceptionally(throwable);
+			error(throwable, true);
 			return;
 		}
 

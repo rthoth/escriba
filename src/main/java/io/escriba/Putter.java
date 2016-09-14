@@ -9,13 +9,6 @@ import java.util.concurrent.Future;
 public interface Putter {
 
 	/**
-	 * Put and return DataEntry when completed.
-	 *
-	 * @return
-	 */
-	Future<DataEntry> apply();
-
-	/**
 	 * Set errorHandler
 	 *
 	 * @param errorHandler
@@ -30,6 +23,13 @@ public interface Putter {
 	 * @return
 	 */
 	Putter ready(ReadyHandler readyHandler);
+
+	/**
+	 * Start put process and returns future when done!
+	 *
+	 * @return
+	 */
+	Future<DataEntry> start();
 
 	/**
 	 * Set successHandler. This handler is invoked when close is invoked and when no failures!

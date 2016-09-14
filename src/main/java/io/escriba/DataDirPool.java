@@ -10,6 +10,30 @@ public interface DataDirPool<T extends DataDirPool> {
 
 	int nextIndex();
 
+	class Fixed implements DataDirPool<Fixed> {
+		private final Path path;
+
+		public Fixed(Path path) {
+			this.path = path;
+
+		}
+
+		@Override
+		public Fixed copy() {
+			return this;
+		}
+
+		@Override
+		public Path get(int index) {
+			return path;
+		}
+
+		@Override
+		public int nextIndex() {
+			return 0;
+		}
+	}
+
 	class RoundRobin implements DataDirPool<RoundRobin> {
 		private final T2<Integer, Path>[] paths;
 		private int position = -1;

@@ -61,7 +61,7 @@ public class DataEntry {
 	public static DataEntry DEFAULT = new DataEntry();
 
 	public enum Status {
-		Creating(10), Ok(20), Updating(30), Deleting(40);
+		Creating(10), Ok(20), Updating(30), Deleting(40), Deleted(50);
 
 		private final int value;
 

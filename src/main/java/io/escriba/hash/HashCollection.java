@@ -58,7 +58,7 @@ public class HashCollection implements Collection {
 		return entry;
 	}
 
-	public Path getPath(String key) {
+	Path getPath(String key) {
 		DataEntry dataEntry = getOrCreateEntry(key);
 
 		Path path = dataDirPool.get(dataEntry.dataDirIndex).resolve(Store.collectionDirName(name));

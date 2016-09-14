@@ -46,7 +46,7 @@ public class PutHandlerStream extends ChannelInboundHandlerAdapter {
 			.ready(this::onReady)
 			.written(this::onWritten)
 			.error(this::onError)
-			.apply()
+			.start()
 		;
 	}
 
