@@ -64,10 +64,39 @@ dependencies {
     compile 'org.mapdb:mapdb:3.0.1'
 }
 
+project(':') {
+
+    publishing {
+        publications {
+            maven(MavenPublication) {
+                artifactId 'escriba'
+            }
+        }
+    }
+}
+
+project(':escriba_client') {
+    publishing {
+        publications {
+            maven(MavenPublication) {
+                artifactId 'client'
+            }
+        }
+    }
+}
+
 
 project(':escriba_server') {
 
     String NettyVersion = "4.1.1.Final"
+
+    publishing{
+        publications {
+            maven(MavenPublication) {
+                artifactId 'server'
+            }
+        }
+    }
 
     dependencies {
         compile project(':')
