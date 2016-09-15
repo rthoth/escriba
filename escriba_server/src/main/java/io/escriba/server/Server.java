@@ -37,6 +37,7 @@ public class Server {
 		;
 	}
 
+	@SuppressWarnings("unused")
 	public void listen(InetSocketAddress address) {
 		new Thread(() -> {
 

@@ -11,7 +11,7 @@ import test.{Help, Spec}
 @RunWith(classOf[JUnitRunner])
 class BasicPutBehaviour extends Spec with Help {
 
-	"Basic Put Behaviour " - {
+	"Basic Put Behaviour ... " - {
 		"simple put " - {
 			val collection = store("simple-put").collection("simple-collection", true)
 			val data = "123112312123132312kkkk5%%".getBytes()

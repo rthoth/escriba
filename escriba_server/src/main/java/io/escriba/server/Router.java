@@ -37,7 +37,7 @@ public class Router extends ChannelInboundHandlerAdapter {
 	}
 
 	private void route(HttpRequest request, ChannelHandlerContext ctx) {
-		Matcher matcher = Router.PATTERN.matcher(request.uri());
+		Matcher matcher = PATTERN.matcher(request.uri());
 
 		if (matcher.find()) {
 			String collection = matcher.group(1);

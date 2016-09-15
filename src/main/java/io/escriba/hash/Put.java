@@ -38,10 +38,8 @@ public class Put implements Putter.Control {
 	private static final CompletionHandler<Integer, T3<Put, ByteBuffer, Putter.WrittenHandler>> WRITE_HANDLER_NO_UPDATE_POSITION = new CompletionHandler<Integer, T3<Put, ByteBuffer, Putter.WrittenHandler>>() {
 		@Override
 		public void completed(Integer total, T3<Put, ByteBuffer, Putter.WrittenHandler> t3) {
-			Putter.WrittenHandler handler = t3.c == null ? t3.a.writtenHandler : t3.c;
-
 			try {
-				handler.apply(total, t3.b, t3.a);
+				(t3.c == null ? t3.a.writtenHandler : t3.c).apply(total, t3.b, t3.a);
 			} catch (Exception e) {
 				t3.a.error(e);
 			}
