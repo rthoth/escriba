@@ -8,6 +8,7 @@ import org.mapdb.Serializer;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Date;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -46,10 +47,14 @@ public class HashCollection implements Collection {
 		DataEntry entry = map.get(key);
 
 		if (entry == null) {
+			Date date = new Date();
 			entry = DataEntry.DEFAULT
 				.copy()
 				.path(nextPath())
 				.dataDirIndex(dataDirPool.nextIndex())
+				.create(date)
+				.update(date)
+				.access(date)
 				.end()
 			;
 			map.put(key, entry);

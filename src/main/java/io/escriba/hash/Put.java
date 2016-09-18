@@ -192,6 +192,8 @@ public class Put implements Putter.Control {
 		try {
 			entry = collection.getEntry(key);
 
+			Date date = new Date();
+
 			entry = (entry == null) ?
 				collection.getOrCreateEntry(key).copy()
 					.mediaType(mediaType)
@@ -201,6 +203,8 @@ public class Put implements Putter.Control {
 				entry.copy()
 					.mediaType(mediaType)
 					.status(DataEntry.Status.Updating)
+					.access(date)
+					.update(date)
 					.end();
 
 		} catch (Throwable throwable) {

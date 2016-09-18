@@ -54,9 +54,9 @@ public class DataEntry {
 			out.writeInt(entry.dataDirIndex);
 		}
 	};
-	private static final int X = (int) 1e3;
+	private static final int X = (int) 2e3;
 
-	private static final int YX = (int) 1e6;
+	private static final int YX = (int) 4e6;
 
 	public static DataEntry DEFAULT = new DataEntry();
 
@@ -121,6 +121,7 @@ public class DataEntry {
 
 	public static class Copy {
 		private Date access;
+		private Date create;
 		private Integer dataDirIndex;
 		private String mediaType;
 		private final DataEntry original;
@@ -138,15 +139,19 @@ public class DataEntry {
 			return this;
 		}
 
+		public Copy create(Date create) {
+			this.create = create;
+			return this;
+		}
+
 		public Copy dataDirIndex(int dataDirIndex) {
 			this.dataDirIndex = dataDirIndex;
 			return this;
 		}
 
 		public DataEntry end() {
-			Date create = original.create;
-
 			Date access = this.access != null ? this.access : original.access;
+			Date create = this.create != null ? this.create : original.create;
 			Date update = this.update != null ? this.update : original.update;
 			String mediaType = this.mediaType != null ? this.mediaType : original.mediaType;
 			long size = this.size != null ? this.size : original.size;
