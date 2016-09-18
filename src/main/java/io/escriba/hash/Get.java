@@ -16,7 +16,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 public class Get implements Getter.Control {
-	private static final Set<StandardOpenOption> OPEN_SET = new HashSet<>(Arrays.asList(StandardOpenOption.READ));
+	private static final Set<StandardOpenOption> OPEN_OPTIONS = new HashSet<>(Arrays.asList(StandardOpenOption.READ));
 
 	private static final CompletionHandler<Integer, T3<Get, ByteBuffer, Getter.ReadHandler>> READ_HANDLER_NO_UPDATE_POSITION = new CompletionHandler<Integer, T3<Get, ByteBuffer, Getter.ReadHandler>>() {
 		@Override
@@ -161,7 +161,7 @@ public class Get implements Getter.Control {
 
 	private void openFile() {
 		try {
-			channel = AsynchronousFileChannel.open(collection.getPath(key), OPEN_SET, collection.executor);
+			channel = AsynchronousFileChannel.open(collection.getPath(key), OPEN_OPTIONS, collection.executor);
 		} catch (Exception e) {
 			error(e);
 			return;

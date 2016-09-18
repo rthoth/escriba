@@ -8,12 +8,12 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 
 import java.net.InetSocketAddress;
 
+@SuppressWarnings("unused")
 public class Server {
 
 	private final ServerBootstrap bootstrap;
@@ -25,15 +25,24 @@ public class Server {
 		this.store = store;
 
 		bootstrap = new ServerBootstrap();
-		EventLoopGroup dispatchGroup = new NioEventLoopGroup(config.dispatchers);
-		NioEventLoopGroup workGroup = new NioEventLoopGroup(config.workers);
+		EventLoopGroup dispatchers = new NioEventLoopGroup(config.dispatchers);
+		EventLoopGroup workers = new NioEventLoopGroup(config.workers);
 
-		bootstrap.group(dispatchGroup, workGroup)
+		bootstrap.group(dispatchers, workers)
 			.channel(NioServerSocketChannel.class)
-			.childHandler(new Server.Initializer(this))
 			.childOption(ChannelOption.SO_KEEPALIVE, true)
 			.childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
 			.childOption(ChannelOption.WRITE_SPIN_COUNT, 1)
+			.childHandler(new ChannelInitializer<NioServerSocketChannel>() {
+				@Override
+				protected void initChannel(NioServerSocketChannel channel) throws Exception {
+					channel.pipeline()
+						.addLast("httpDecoder", new HttpRequestDecoder())
+						.addLast("httpEncoder", new HttpResponseEncoder())
+						.addLast("router", new Router(config, store))
+						.addLast("errorCatcher", new ErrorCatcher());
+				}
+			})
 		;
 	}
 
@@ -60,23 +69,5 @@ public class Server {
 			}
 
 		}, "Escriba-main").start();
-	}
-
-	private static class Initializer extends ChannelInitializer<NioSocketChannel> {
-		private final Server server;
-
-		public Initializer(Server server) {
-			this.server = server;
-		}
-
-		@Override
-		protected void initChannel(NioSocketChannel ch) throws Exception {
-			ch.pipeline()
-				.addLast("httpDecoder", new HttpRequestDecoder())
-				.addLast("httpEncoder", new HttpResponseEncoder())
-				.addLast("router", new Router(server.config, server.store))
-				.addLast("errorCatcher", new ErrorCatcher())
-			;
-		}
 	}
 }
