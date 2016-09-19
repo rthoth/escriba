@@ -64,6 +64,12 @@ dependencies {
     compile 'org.mapdb:mapdb:3.0.1'
 }
 
+project(':escriba_node') {
+
+    dependencies {
+        compile project(':escriba_server')
+    }
+}
 
 project(':escriba_server') {
 

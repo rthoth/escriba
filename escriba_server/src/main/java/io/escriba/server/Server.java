@@ -18,6 +18,7 @@ public class Server {
 
 	private final ServerBootstrap bootstrap;
 	private final Config config;
+	private InetSocketAddress listenAddress;
 	private final Store store;
 
 	public Server(Config config, Store store) {
@@ -48,6 +49,7 @@ public class Server {
 
 	@SuppressWarnings("unused")
 	public void listen(InetSocketAddress address) {
+		listenAddress = address;
 		new Thread(() -> {
 
 			ChannelFuture future = null;
@@ -69,5 +71,13 @@ public class Server {
 			}
 
 		}, "Escriba-main").start();
+	}
+
+	public InetSocketAddress listenAddress() {
+		return listenAddress;
+	}
+
+	public Store store() {
+		return this.store;
 	}
 }
