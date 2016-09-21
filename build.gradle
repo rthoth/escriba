@@ -1,6 +1,7 @@
 allprojects {
     apply plugin: 'java'
-    apply plugin: 'maven-publish'
+//    apply plugin: 'maven-publish'
+    apply plugin: 'ivy-publish'
     apply plugin: 'scala'
 
     group 'io.escriba'
@@ -27,33 +28,66 @@ allprojects {
     }
 
     task sourceJar(type: Jar) {
-        from sourceSets.main.allJava
+        from sourceSets.main.java
+        classifier 'sources'
     }
 
     task javadocJar(type: Jar) {
         from javadoc
+        classifier 'javadoc'
     }
+
+//    publishing {
+//        publications {
+//            maven(MavenPublication) {
+//                from components.java
+//                artifact sourceJar {
+//                    classifier 'sources'
+//                }
+//                artifact javadocJar {
+//                    classifier 'javadoc'
+//                }
+//            }
+//        }
+//
+//        repositories {
+//            maven {
+//                url "http://repo.ti.lemaf.ufla.br/nexus/content/repositories/releases/"
+//
+//                credentials {
+//                    username "$mavenUser"
+//                    password  "mavenPassword"
+//                }
+//            }
+//        }
+//    }
 
     publishing {
         publications {
-            maven(MavenPublication) {
+            ivy(IvyPublication) {
+
                 from components.java
-                artifact sourceJar {
-                    classifier 'sources'
+
+                artifact(sourceJar) {
+                    type 'src'
+                    conf 'runtime'
                 }
-                artifact javadocJar {
-                    classifier 'javadoc'
+
+                artifact(javadocJar) {
+                    type 'doc'
+                    conf 'runtime'
                 }
             }
         }
 
         repositories {
-            maven {
-                url "http://repo.ti.lemaf.ufla.br/nexus/content/repositories/releases/"
+            ivy {
+                name "local"
+                url "${System.getenv("HOME")}/.ivy2/cache"
 
-                credentials {
-                    username "$mavenUser"
-                    password "$mavenPassword"
+                layout 'pattern', {
+                    artifact '[organisation]/[module]/[type]s/[artifact]-[revision](-[classifier])(.[ext])'
+                    ivy '[organisation]/[module]/[artifact]-[revision](.[ext])'
                 }
             }
         }
@@ -66,6 +100,14 @@ dependencies {
 
 project(':escriba_node') {
 
+    publishing {
+        publications {
+            ivy(IvyPublication) {
+                module 'node'
+            }
+        }
+    }
+
     dependencies {
         compile project(':escriba_server')
     }
@@ -74,6 +116,14 @@ project(':escriba_node') {
 project(':escriba_server') {
 
     String NettyVersion = "4.1.1.Final"
+
+    publishing {
+        publications {
+            ivy(IvyPublication) {
+                module 'server'
+            }
+        }
+    }
 
     dependencies {
         compile project(':')

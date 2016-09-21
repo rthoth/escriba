@@ -9,7 +9,7 @@ import io.escriba.server.{Config, Server}
 
 import scala.util.Random
 
-object TestServer {
+object TestServer extends Implicits {
 
 	lazy val server: Server = {
 		val s = new Server(new Config(1, 1), store)
@@ -20,7 +20,11 @@ object TestServer {
 
 	lazy val store: Store = {
 		val suffix = new Date().getTime.toHexString
-		val s = new Store(new File(s"target/test/control-$suffix"), new File(s"target/test/data-$suffix").toPath, 2)
+		val s = new Store(new File(s"build/test/control-$suffix") before {
+			_.getParentFile.mkdirs()
+		}, new File(s"build/test/data-$suffix").before {
+			_.getParentFile.mkdirs()
+		}.toPath, 2)
 
 		s
 	}

@@ -24,7 +24,7 @@ public class RemotePut<T> extends Put {
 	}
 
 	@Override
-	public Future<Postcard> start() {
+	public Future<Postcard> future() {
 		return new ProxyFuture<>(completable);
 	}
 }

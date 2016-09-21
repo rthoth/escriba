@@ -1,5 +1,6 @@
 package io.escriba.node;
 
+import io.escriba.Store;
 import io.escriba.server.Server;
 
 @SuppressWarnings("unused")
@@ -15,5 +16,9 @@ public class Node {
 
 	public Postcard postcard(String collection) {
 		return new Postcard(collection, server);
+	}
+
+	public Store store() {
+		return server.store();
 	}
 }
