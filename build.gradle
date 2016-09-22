@@ -1,3 +1,5 @@
+String NettyVersion = "4.1.1.Final"
+
 allprojects {
     apply plugin: 'java'
 //    apply plugin: 'maven-publish'
@@ -110,12 +112,11 @@ project(':escriba_node') {
 
     dependencies {
         compile project(':escriba_server')
+        compile "io.netty:netty-codec-http:${NettyVersion}"
     }
 }
 
 project(':escriba_server') {
-
-    String NettyVersion = "4.1.1.Final"
 
     publishing {
         publications {

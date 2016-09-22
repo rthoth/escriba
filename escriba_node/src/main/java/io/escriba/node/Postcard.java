@@ -1,42 +1,50 @@
 package io.escriba.node;
 
-import io.escriba.Store;
 import io.escriba.server.Server;
 
+import java.io.Serializable;
 import java.util.concurrent.Future;
 
-public class Postcard {
-	private final Anchor anchor;
-	private final String collection;
-	private final transient Server server;
-	private final transient Store store;
+public class Postcard implements Serializable {
+
+	public final Anchor anchor;
+	public final String collection;
 
 	public Postcard(String collection, Server server) {
-		this.anchor = new Anchor(server);
+		this(collection, new Anchor(server));
+	}
+
+	public Postcard(String collection, Anchor anchor) {
 		this.collection = collection;
-		this.server = server;
-		this.store = server.store();
+		this.anchor = anchor;
 	}
 
-	public String collection() {
-		return collection;
-	}
-
-	public <T> Future<T> get(String key, int initialSize, PostcardReader<T> reader) throws Exception {
-		if (server == null)
-			return new RemoteGet(this, key, initialSize, reader).future();
+	protected <T> Future<T> get(Node node, String key, int initialSize, PostcardReader<T> reader) throws Exception {
+		if (anchor.equals(node.anchor))
+			return new LocalGet(node.store, this, key, initialSize, reader).future();
 		else
-			return new LocalGet(this, key, initialSize, reader).future();
+			return new RemoteGet<>(node.bootstrap().clone(), this, key, initialSize, reader).future();
 	}
 
-	public <T> Future<Postcard> put(String key, String mediaType, T content, PostcardWriter<T> writer) throws Exception {
-		if (server == null)
-			return new RemotePut<>(this, key, mediaType, content, writer).future();
+//	public <T> Future<T> get(String key, int initialSize, PostcardReader<T> reader) throws Exception {
+//		if (isLocal())
+//			return new RemoteGet(this, key, initialSize, reader).future();
+//		else
+//			return new LocalGet(this, key, initialSize, reader).future();
+//	}
+
+//	public <T> Future<Postcard> put(String key, String mediaType, T content, PostcardWriter<T> writer) throws Exception {
+//		if (server == null)
+//			return new RemotePut<>(this, key, mediaType, content, writer).future();
+//		else
+//			return new LocalPut<>(this, key, mediaType, content, writer).future();
+//	}
+
+	protected <T> Future<Postcard> put(Node node, String key, String mediaType, T content, PostcardWriter<T> writer) throws Exception {
+
+		if (anchor.equals(node.anchor))
+			return new LocalPut<>(node.store, this, key, mediaType, content, writer).future();
 		else
-			return new LocalPut<>(this, key, mediaType, content, writer).future();
-	}
-
-	public Store store() {
-		return store;
+			return new RemotePut<>(node.bootstrap(), this, key, mediaType, content, writer).future();
 	}
 }

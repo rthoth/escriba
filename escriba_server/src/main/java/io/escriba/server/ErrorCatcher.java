@@ -14,6 +14,10 @@ import java.nio.charset.Charset;
 
 public class ErrorCatcher extends ChannelInboundHandlerAdapter {
 
+	private HttpResponse badRequest(ChannelHandlerContext ctx, Throwable cause) {
+		return createResponse(HttpResponseStatus.BAD_REQUEST, content(ctx, cause.getMessage()));
+	}
+
 	private static Charset charset() {
 		return Charset.forName("UTF-8");
 	}
@@ -35,6 +39,8 @@ public class ErrorCatcher extends ChannelInboundHandlerAdapter {
 			response = noValue(ctx, (NoValue) cause);
 		else if (cause instanceof EscribaException.NotFound)
 			response = notFound((EscribaException.NotFound) cause);
+		else if (cause instanceof EscribaException.IllegalArgument)
+			response = badRequest(ctx, cause);
 		else
 			response = internalError(ctx, cause);
 

@@ -1,13 +1,14 @@
 package io.escriba.node;
 
 import io.escriba.DataEntry;
+import io.escriba.Store;
 
 import java.nio.ByteBuffer;
 
 import static java.lang.Math.min;
 
 public class LocalGet<T> extends Get<T> {
-	public LocalGet(Postcard postcard, String key, int initialSize, PostcardReader<T> reader) throws Exception {
+	public LocalGet(Store store, Postcard postcard, String key, int initialSize, PostcardReader<T> reader) throws Exception {
 		super(postcard, key, initialSize, reader);
 
 		final ByteBuffer[] localBuffer = {null};
@@ -15,7 +16,7 @@ public class LocalGet<T> extends Get<T> {
 		final T[] ret = (T[]) new Object[]{null};
 		final long[] total = {0};
 
-		postcard.store().collection(postcard.collection(), false).get(key)
+		store.collection(postcard.collection, false).get(key)
 			.ready((entry, control) -> {
 
 				localEntry[0] = entry;
@@ -40,7 +41,7 @@ public class LocalGet<T> extends Get<T> {
 							read = (int) (localEntry[0].size - total[0]);
 
 						if (read == 0)
-							throw new IllegalStateException(String.format("Entry [%s] in [%s]", key, postcard.collection()));
+							throw new IllegalStateException(String.format("Entry [%s] in [%s]", key, postcard.collection));
 
 						if (localBuffer[0].capacity() < read)
 							localBuffer[0] = ByteBuffer.allocate(read);

@@ -11,14 +11,16 @@ import scala.util.Random
 
 object TestServer extends Implicits {
 
-	lazy val server: Server = {
-		val s = new Server(new Config(1, 1), store)
+	lazy val server: Server = newServer
+
+	def newServer = {
+		val s = new Server(new Config(1, 1), newStore)
 		s.listen(new InetSocketAddress("localhost", 5000 + Random.nextInt(500)))
 
 		s
 	}
 
-	lazy val store: Store = {
+	def newStore = {
 		val suffix = new Date().getTime.toHexString
 		val s = new Store(new File(s"build/test/control-$suffix") before {
 			_.getParentFile.mkdirs()
@@ -31,7 +33,11 @@ object TestServer extends Implicits {
 }
 
 trait TestServer {
+	def newServer = TestServer.newServer
+
+	def newStore = TestServer.newStore
+
 	def server = TestServer.server
 
-	def store = TestServer.store
+	def store = TestServer.server.store()
 }

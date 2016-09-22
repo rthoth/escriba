@@ -1,5 +1,6 @@
 package io.escriba.server;
 
+import io.escriba.EscribaException;
 import io.escriba.Store;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
@@ -12,7 +13,7 @@ import java.util.regex.Pattern;
 
 public class Router extends ChannelInboundHandlerAdapter {
 
-	private static final Pattern PATTERN = Pattern.compile("^/([0-9a-z]+)/([0-9a-z]+)$", Pattern.CASE_INSENSITIVE);
+	private static final Pattern PATTERN = Pattern.compile("^/([0-9a-z\\-]+)/([0-9a-z\\-]+)$", Pattern.CASE_INSENSITIVE);
 
 	private final Config config;
 	private final Store store;
@@ -30,10 +31,7 @@ public class Router extends ChannelInboundHandlerAdapter {
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-		//noinspection CodeBlock2Expr
-		ctx.channel().closeFuture().addListener(future -> {
-			cause.printStackTrace();
-		});
+		ctx.fireExceptionCaught(cause);
 	}
 
 	private void route(HttpRequest request, ChannelHandlerContext ctx) {
@@ -66,7 +64,7 @@ public class Router extends ChannelInboundHandlerAdapter {
 				// TODO: Exception?
 			}
 		} else {
-			// TODO: Exception?
+			throw new EscribaException.IllegalArgument("Invalid uri: " + request.uri());
 		}
 	}
 }

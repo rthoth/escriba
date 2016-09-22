@@ -8,6 +8,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 
@@ -34,9 +35,9 @@ public class Server {
 			.childOption(ChannelOption.SO_KEEPALIVE, true)
 			.childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
 			.childOption(ChannelOption.WRITE_SPIN_COUNT, 1)
-			.childHandler(new ChannelInitializer<NioServerSocketChannel>() {
+			.childHandler(new ChannelInitializer<NioSocketChannel>() {
 				@Override
-				protected void initChannel(NioServerSocketChannel channel) throws Exception {
+				protected void initChannel(NioSocketChannel channel) throws Exception {
 					channel.pipeline()
 						.addLast("httpDecoder", new HttpRequestDecoder())
 						.addLast("httpEncoder", new HttpResponseEncoder())
