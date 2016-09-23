@@ -1,7 +1,5 @@
 package io.escriba.node;
 
-import java.nio.ByteBuffer;
-
-public interface PostcardWriter<T> {
-	ByteBuffer apply(T value) throws Exception;
+public interface PostcardWriter<T, P> {
+	WriteAction<P> apply(T value, P previous) throws Exception;
 }

@@ -32,10 +32,10 @@ public class LocalGet<T> extends Get<T> {
 					control.read(buf);
 				else {
 					buf.flip();
-					Action<T> action = reader.apply(total[0], localEntry[0], buf);
+					ReadAction<T> action = reader.apply(total[0], localEntry[0], buf);
 
-					if (action instanceof Action.Read) {
-						int read = ((Action.Read) action).bytes;
+					if (action instanceof ReadAction.Continue) {
+						int read = ((ReadAction.Continue) action).bytes;
 
 						if (read + total[0] > localEntry[0].size)
 							read = (int) (localEntry[0].size - total[0]);
@@ -49,8 +49,8 @@ public class LocalGet<T> extends Get<T> {
 							localBuffer[0].limit(read).rewind();
 
 						control.read(localBuffer[0]);
-					} else if (action instanceof Action.Stop) {
-						ret[0] = ((Action.Stop<T>) action).value;
+					} else if (action instanceof ReadAction.Stop) {
+						ret[0] = ((ReadAction.Stop<T>) action).value;
 						control.close();
 					}
 				}

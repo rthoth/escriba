@@ -10,18 +10,17 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.util.concurrent.GenericFutureListener;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.concurrent.Future;
 
 import static java.lang.Math.min;
 
-public class RemotePut<T> extends Put<T> {
+public class RemotePut<T, P> extends Put<T, P> {
 
 	private static final int MIN_BUFFER = 128 * 1024;
 
-	public RemotePut(Bootstrap bootstrap, Postcard postcard, String key, String mediaType, T content, PostcardWriter<T> writer) {
-		super(postcard, key, mediaType, content, writer);
+	public RemotePut(Bootstrap bootstrap, Postcard postcard, String key, String mediaType, P previous, T content, PostcardWriter<T, P> writer) {
+		super(postcard, key, mediaType, previous, content, writer);
 
 		bootstrap.handler(new ChannelInitializer<NioSocketChannel>() {
 			@Override
@@ -68,14 +67,14 @@ public class RemotePut<T> extends Put<T> {
 		private void serialize() throws Exception {
 
 			if (hasMore) {
-				ByteBuffer buffer;
-
 				while (composite.readableBytes() < MIN_BUFFER) {
 
-					buffer = writer.apply(content);
-					if (buffer != null)
-						composite.addComponent(true, ctx.alloc().heapBuffer(buffer.limit(), buffer.limit()).writeBytes(buffer));
-					else {
+					WriteAction<P> action = writer.apply(content, previous);
+					composite.addComponent(true, ctx.alloc().heapBuffer(action.buffer.limit(), action.buffer.limit()).writeBytes(action.buffer));
+
+					if (action instanceof WriteAction.Continue)
+						previous = (P) ((WriteAction.Continue) action).previous;
+					else if (action instanceof WriteAction.Stop) {
 						hasMore = false;
 						break;
 					}

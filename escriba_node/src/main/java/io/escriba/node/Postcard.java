@@ -40,11 +40,11 @@ public class Postcard implements Serializable {
 //			return new LocalPut<>(this, key, mediaType, content, writer).future();
 //	}
 
-	protected <T> Future<Postcard> put(Node node, String key, String mediaType, T content, PostcardWriter<T> writer) throws Exception {
+	protected <T, P> Future<Postcard> put(Node node, String key, String mediaType, P previous, T content, PostcardWriter<T, P> writer) throws Exception {
 
 		if (anchor.equals(node.anchor))
-			return new LocalPut<>(node.store, this, key, mediaType, content, writer).future();
+			return new LocalPut<>(node.store, this, key, mediaType, previous, content, writer).future();
 		else
-			return new RemotePut<>(node.bootstrap(), this, key, mediaType, content, writer).future();
+			return new RemotePut<>(node.bootstrap(), this, key, mediaType, previous, content, writer).future();
 	}
 }

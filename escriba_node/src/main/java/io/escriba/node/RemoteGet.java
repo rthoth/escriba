@@ -116,11 +116,11 @@ public class RemoteGet<T> extends Get<T> {
 				ByteBuffer buffer = composite.nioBuffer(0, composite.readableBytes());
 				total += buffer.limit();
 
-				Action<T> action = reader.apply(total, entry, buffer);
+				ReadAction<T> action = reader.apply(total, entry, buffer);
 				composite.readerIndex(composite.readableBytes()).discardReadBytes();
 
-				if (action instanceof Action.Stop)
-					completable.complete(((Action.Stop<T>) action).value);
+				if (action instanceof ReadAction.Stop)
+					completable.complete(((ReadAction.Stop<T>) action).value);
 				else
 					completable.completeExceptionally(new EscribaException.IllegalState("No object"));
 
@@ -133,7 +133,7 @@ public class RemoteGet<T> extends Get<T> {
 
 					composite.readerIndex(buffer.limit()).discardReadBytes();
 
-					Action<T> action;
+					ReadAction<T> action;
 					try {
 						action = reader.apply(total, entry, buffer);
 					} catch (Exception exception) {
@@ -142,11 +142,11 @@ public class RemoteGet<T> extends Get<T> {
 						return;
 					}
 
-					if (action instanceof Action.Read) {
-						nextBytes = ((Action.Read) action).bytes;
+					if (action instanceof ReadAction.Continue) {
+						nextBytes = ((ReadAction.Continue) action).bytes;
 					} else {
 						ctx.close();
-						completable.complete(((Action.Stop<T>) action).value);
+						completable.complete(((ReadAction.Stop<T>) action).value);
 						break;
 					}
 				}

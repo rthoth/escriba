@@ -40,8 +40,8 @@ public class Node {
 		return new Postcard(collection, server);
 	}
 
-	public <T> Future<Postcard> put(Postcard postcard, String key, String mediaType, T content, PostcardWriter<T> writer) throws Exception {
-		return postcard.put(this, key, mediaType, content, writer);
+	public <T, P> Future<Postcard> put(Postcard postcard, String key, String mediaType, P previous, T content, PostcardWriter<T, P> writer) throws Exception {
+		return postcard.put(this, key, mediaType, previous, content, writer);
 	}
 
 	public static class NodeConfig {

@@ -4,8 +4,8 @@ import java.nio.ByteBuffer
 import java.nio.charset.Charset
 
 import io.escriba.DataEntry
-import io.escriba.node.Action._
-import io.escriba.node.Node
+import io.escriba.node.ReadAction._
+import io.escriba.node.{Node, WriteAction}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{AsyncFreeSpec, Matchers}
@@ -28,24 +28,23 @@ class LocalPostcardSpec extends AsyncFreeSpec with Matchers with TestServer with
 
 			var buffer = ByteBuffer.allocate(0)
 
-			var p = 0
+			node.put(postcard, "akey", "text/plain", 0, (0 until 100).mkString(","), (string: String, p: Int) => {
 
-			node.put(postcard, "akey", "text/plain", (0 until 100).mkString(","), (string: String) => {
-				if (p < string.length) {
+				val np = math.min(p + 2, string.length)
+				val bytes = string.substring(p, np).getBytes(Charset.forName("UTF-8"))
 
-					val np = math.min(p + 2, string.length)
-					val bytes = string.substring(p, np).getBytes(Charset.forName("UTF-8"))
+				if (buffer.capacity() < bytes.length)
+					buffer = ByteBuffer.allocate(bytes.length)
 
-					p = np
+				buffer = (buffer before (_.rewind())).put(bytes) before {
+					_.flip()
+				}
 
-					if (buffer.capacity() < bytes.length)
-						buffer = ByteBuffer.allocate(bytes.length)
+				if (np < string.length)
+					WriteAction.write(buffer, np)
+				else
+					WriteAction.stop[Int](buffer)
 
-					(buffer before (_.rewind())).put(bytes) before {
-						_.flip()
-					}
-				} else
-					null
 			}).map(_ => node.store.collection("local-postcard-spec", false).getEntry("akey").size should be(289))
 		}
 
