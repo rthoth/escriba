@@ -7,6 +7,8 @@ import java.util.concurrent.Future;
 
 public class Postcard implements Serializable {
 
+	private static final long serialVersionUID = 100L;
+
 	public final Anchor anchor;
 	public final String collection;
 

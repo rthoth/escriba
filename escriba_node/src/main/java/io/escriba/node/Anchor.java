@@ -2,9 +2,12 @@ package io.escriba.node;
 
 import io.escriba.server.Server;
 
+import java.io.Serializable;
 import java.net.InetSocketAddress;
 
-public class Anchor implements Comparable<Anchor> {
+public class Anchor implements Comparable<Anchor>, Serializable {
+
+	private static final long serialVersionUID = 100L;
 
 	private final String host;
 	private final int port;
