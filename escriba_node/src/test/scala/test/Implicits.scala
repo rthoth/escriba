@@ -4,7 +4,7 @@ import java.nio.ByteBuffer
 import java.util.concurrent.{ExecutionException, TimeUnit, TimeoutException}
 
 import io.escriba.DataEntry
-import io.escriba.node.{PostcardReader, PostcardWriter, ReadAction, WriteAction}
+import io.escriba.node._
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{CanAwait, ExecutionContext, Future}
@@ -16,8 +16,16 @@ trait Implicits {
 		override def apply(total: Long, entry: DataEntry, buffer: ByteBuffer): ReadAction[T] = f(total, entry, buffer)
 	}
 
+	implicit def f2PostcardReader0[T](f: (DataEntry, ByteBuffer) => T): PostcardReader0[T] = new PostcardReader0[T] {
+		override def apply(entry: DataEntry, buffer: ByteBuffer): T = f(entry, buffer)
+	}
+
 	implicit def f2PostcardWriter[T, P](f: (T, P) => WriteAction[P]): PostcardWriter[T, P] = new PostcardWriter[T, P] {
 		override def apply(value: T, previous: P): WriteAction[P] = f(value, previous)
+	}
+
+	implicit def f2PostcardWriter0[T](f: (T) => ByteBuffer): PostcardWriter0[T] = new PostcardWriter0[T] {
+		override def apply(value: T): ByteBuffer = f(value)
 	}
 
 	implicit class Before[T](x: T) {

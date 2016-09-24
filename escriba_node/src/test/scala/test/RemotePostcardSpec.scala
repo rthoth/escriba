@@ -14,18 +14,18 @@ import scala.util.Random
 @RunWith(classOf[JUnitRunner])
 class RemotePostcardSpec extends AsyncFreeSpec with Matchers with TestServer with Implicits {
 
-	lazy val localServer = new Node(newServer, new Node.NodeConfig(2))
+	lazy val localNode = new Node(newServer, new Node.NodeConfig(2))
 
-	lazy val remoteServer = new Node(server, new Node.NodeConfig(2))
+	lazy val remoteNode = new Node(server, new Node.NodeConfig(2))
 
 	"A remote postcard should" - {
 
-		val localPostcard = remoteServer.postcard("a-remote-postcard-spec")
+		val localPostcard = remoteNode.postcard("a-remote-postcard-spec")
 
 		"write locally" - {
 
 			"correctly" in {
-				remoteServer.put(localPostcard, "a-key", "text/plain", null, (0 until 200).mkString(","), (content: String, n: Null) => {
+				remoteNode.put(localPostcard, "a-key", "text/plain", null, (0 until 200).mkString(","), (content: String, n: Null) => {
 					val bytes = content.getBytes(Charset.forName("UTF-8"))
 					val buffer = ByteBuffer.allocate(bytes.length)
 					buffer.put(bytes).flip()
@@ -34,12 +34,12 @@ class RemotePostcardSpec extends AsyncFreeSpec with Matchers with TestServer wit
 			}
 
 			"and read remotely" in {
-				val remotePostcard = new Postcard(localPostcard.collection, remoteServer.anchor)
+				val remotePostcard = new Postcard(localPostcard.collection, remoteNode.anchor)
 
 
 				var string = ""
 
-				localServer.get(remotePostcard, "a-key", 50, (read: Long, entry: DataEntry, buffer: ByteBuffer) => {
+				localNode.get(remotePostcard, "a-key", 50, (read: Long, entry: DataEntry, buffer: ByteBuffer) => {
 					val b = Array.ofDim[Byte](buffer.limit())
 					buffer.get(b)
 					string += new String(b, Charset.forName("UTF-8"))
@@ -56,10 +56,10 @@ class RemotePostcardSpec extends AsyncFreeSpec with Matchers with TestServer wit
 			val collection = "a-collection-remote-1"
 
 			"correctly" in {
-				val remotePostcard = new Postcard(collection, remoteServer.anchor)
+				val remotePostcard = new Postcard(collection, remoteNode.anchor)
 				val buf = ByteBuffer.allocate(2)
 
-				localServer.put(remotePostcard, "akkey", "text/plain", 0, (1 to 213).mkString(":"), (string: String, i: Int) => {
+				localNode.put(remotePostcard, "akkey", "text/plain", 0, (1 to 213).mkString(":"), (string: String, i: Int) => {
 					buf.rewind()
 
 					val ni = i + 1
@@ -70,16 +70,16 @@ class RemotePostcardSpec extends AsyncFreeSpec with Matchers with TestServer wit
 					else
 						WriteAction.stop[Int](buf)
 				}).map(_ => {
-					remoteServer.store.collection(collection, false).getEntry("akkey").size should be(743)
+					remoteNode.store.collection(collection, false).getEntry("akkey").size should be(743)
 				})
 			}
 
 			"and read correctly" in {
-				val remotePostcard = new Postcard(collection, remoteServer.anchor)
+				val remotePostcard = new Postcard(collection, remoteNode.anchor)
 
 				var string = ""
 
-				localServer.get(remotePostcard, "akkey", 30, (total: Long, entry: DataEntry, buffer: ByteBuffer) => {
+				localNode.get(remotePostcard, "akkey", 30, (total: Long, entry: DataEntry, buffer: ByteBuffer) => {
 					val bytes = Array.ofDim[Byte](buffer.limit())
 					buffer.get(bytes)
 
@@ -93,6 +93,27 @@ class RemotePostcardSpec extends AsyncFreeSpec with Matchers with TestServer wit
 			}
 		}
 
+		"atomic" - {
+			val remotePostcard = remoteNode.postcard("an-atomic-collection");
+
+			"write" in {
+
+				localNode.put(remotePostcard, "a-key", "text/plain", ("#" * 51).getBytes, (bytes: Array[Byte]) => {
+					ByteBuffer.allocate(bytes.length) before {
+						_.put(bytes).flip()
+					}
+				}).map(_ => remoteNode.store.collection(remotePostcard.collection, false).getEntry("a-key").size should be(51))
+			}
+
+			"read" in {
+
+				localNode.get(remotePostcard, "a-key", 51, (entry: DataEntry, buffer: ByteBuffer) => {
+					val bytes = Array.ofDim[Byte](buffer.limit())
+					buffer.get(bytes)
+					new String(bytes)
+				}).map(_ should be("#" * 51))
+			}
+		}
 	}
 
 }

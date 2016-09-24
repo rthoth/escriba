@@ -66,4 +66,26 @@ class LocalPostcardSpec extends AsyncFreeSpec with Matchers with TestServer with
 		}
 	}
 
+
+	"A local postcard should too" - {
+		val postcard = node.postcard("atomic-collection")
+
+		"atomic write" in {
+
+			node.put(postcard, "a-key", "text/plain", (10 to 200).mkString("@"), (string: String) => {
+				val bytes = string.getBytes
+				ByteBuffer.allocate(bytes.length) before {
+					_.put(bytes).flip()
+				}
+			}).map(_ => node.store.collection(postcard.collection, false).getEntry("a-key").size should be(673))
+		}
+
+		"atomic read" in {
+
+			node.get(postcard, "a-key", 673, (entry: DataEntry, buffer: ByteBuffer) => {
+				new String(buffer.array())
+			}).map(_ should be((10 to 200).mkString("@")))
+		}
+	}
+
 }
