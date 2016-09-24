@@ -1,11 +1,9 @@
 package io.escriba.server;
 
+import io.escriba.ProxyFuture;
 import io.escriba.Store;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -13,6 +11,8 @@ import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 @SuppressWarnings("unused")
 public class Server {
@@ -49,29 +49,44 @@ public class Server {
 	}
 
 	@SuppressWarnings("unused")
-	public void listen(InetSocketAddress address) {
-		listenAddress = address;
-		new Thread(() -> {
+	public Future<Channel> listen(InetSocketAddress address) {
 
-			ChannelFuture future = null;
-			try {
-				// Start bind here!
-				future = this.bootstrap.bind(address).sync();
-			} catch (InterruptedException e) {
-				// TODO: What to do?
-				e.printStackTrace();
-			}
+		this.listenAddress = address;
 
-			if (future != null) {
-				try {
-					// Wait here!
-					future.channel().closeFuture().sync();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
+		final CompletableFuture<Channel> completable = new CompletableFuture<>();
 
-		}, "Escriba-main").start();
+//		new Thread(() -> {
+//
+//			ChannelFuture future = null;
+//			try {
+//				// Start bind here!
+//				future = this.bootstrap.bind(address).sync();
+//			} catch (InterruptedException e) {
+//				// TODO: What to do?
+//				e.printStackTrace();
+//			}
+//
+//			if (future != null) {
+//				try {
+//					// Wait here!
+//					future.channel().closeFuture().sync();
+//				} catch (InterruptedException e) {
+//					e.printStackTrace();
+//				}
+//			}
+//
+//		}, "Escriba-main").start();
+
+		bootstrap.bind(address).addListener(future -> {
+			ChannelFuture channelFuture = (ChannelFuture) future;
+
+			if (channelFuture.isSuccess())
+				completable.complete(channelFuture.channel());
+			else
+				completable.completeExceptionally(channelFuture.cause());
+		});
+
+		return new ProxyFuture<>(completable);
 	}
 
 	public InetSocketAddress listenAddress() {

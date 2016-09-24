@@ -23,7 +23,7 @@ public class Postcard implements Serializable {
 
 	protected <T> Future<T> get(Node node, String key, int initialSize, PostcardReader<T> reader) throws Exception {
 		if (anchor.equals(node.anchor))
-			return new LocalGet(node.store, this, key, initialSize, reader).future();
+			return new LocalGet<>(node.store, this, key, initialSize, reader).future();
 		else
 			return new RemoteGet<>(node.bootstrap().clone(), this, key, initialSize, reader).future();
 	}
