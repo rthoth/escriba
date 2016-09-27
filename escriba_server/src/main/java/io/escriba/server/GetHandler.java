@@ -15,19 +15,25 @@ import static io.netty.channel.ChannelFutureListener.CLOSE;
 
 public class GetHandler extends ChannelInboundHandlerAdapter {
 
-	private static final int CHUNK_SIZE = 1024 * 512;
+	private final Config config;
 	private ChannelHandlerContext ctx;
+
+	public GetHandler(Config config) {
+		this.config = config;
+	}
 
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-		if (msg instanceof Request) {
+		if (msg instanceof Request)
 			get((Request) msg);
-		} else
-			ctx.fireChannelRead(msg);
 	}
 
 	private void get(Request request) throws Exception {
-		new GetChunkedResponse(request.get(), ctx, CHUNK_SIZE);
+		request.get()
+			.ready(this::onReady)
+			.read(this::onRead)
+			.error(this::onError)
+			.start();
 	}
 
 	@Override
@@ -35,54 +41,37 @@ public class GetHandler extends ChannelInboundHandlerAdapter {
 		this.ctx = ctx;
 	}
 
-	private static class GetChunkedResponse {
-		private final int chunkSize;
-		private final ChannelHandlerContext ctx;
+	private void onError(Throwable throwable) {
+		// TODO: Log?
+		throwable.printStackTrace();
+		ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT).addListener(CLOSE);
+	}
 
-		public GetChunkedResponse(Getter getter, ChannelHandlerContext ctx, int chunkSize) {
-			this.ctx = ctx;
-			this.chunkSize = chunkSize;
+	private void onRead(int bytes, ByteBuffer buffer, Getter.Control control) throws Exception {
+		if (bytes >= 0) {
 
-			getter
-				.ready(this::onReady)
-				.read(this::onRead)
-				.error(this::onError)
-				.start()
-			;
-		}
+			if (bytes > 0) {
+				buffer.limit(bytes).rewind();
+				ByteBuf buf = ctx.alloc().buffer(bytes);
+				buf.writeBytes(buffer);
+				ctx.writeAndFlush(buf);
+			}
 
-		private void onError(Throwable throwable) {
-			// TODO: Log?
-			throwable.printStackTrace();
-			ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT).addListener(CLOSE);
-		}
-
-		private void onRead(int bytes, ByteBuffer buffer, Getter.Control control) throws Exception {
-			if (bytes >= 0) {
-
-				if (bytes > 0) {
-					buffer.limit(bytes).rewind();
-					ByteBuf buf = ctx.alloc().buffer(bytes);
-					buf.writeBytes(buffer);
-					ctx.writeAndFlush(buf);
-				}
-
-				buffer.clear();
-				control.read(buffer);
-			} else {
-				try {
-					control.close();
-				} finally {
-					ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT).addListener(CLOSE);
-				}
+			buffer.clear();
+			control.read(buffer);
+		} else {
+			try {
+				control.close();
+			} finally {
+				ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT).addListener(CLOSE);
 			}
 		}
+	}
 
-		private void onReady(DataEntry entry, Getter.Control control) throws Exception {
-			HttpResponse httpResponse = Http.chunked(Http.ok(entry.mediaType));
-			httpResponse.headers().set(HttpHeaderNames.CONTENT_LENGTH, entry.size);
-			ctx.writeAndFlush(httpResponse);
-			control.read(ByteBuffer.allocate(chunkSize));
-		}
+	private void onReady(DataEntry entry, Getter.Control control) throws Exception {
+		HttpResponse httpResponse = Http.chunked(Http.ok(entry.mediaType));
+		httpResponse.headers().set(HttpHeaderNames.CONTENT_LENGTH, entry.size);
+		ctx.writeAndFlush(httpResponse);
+		control.read(ByteBuffer.allocate(config.getChunkSize));
 	}
 }

@@ -47,7 +47,7 @@ public class Router extends ChannelInboundHandlerAdapter {
 				handler = new PutHandler();
 
 			else if (request.method() == HttpMethod.GET)
-				handler = new GetHandler();
+				handler = new GetHandler(config);
 
 			else if (request.method() == HttpMethod.DELETE)
 				handler = new DeleteHandler();
