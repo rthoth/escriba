@@ -8,10 +8,16 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
  */
 public class PutHandler extends ChannelInboundHandlerAdapter {
 
+	private final Config config;
+
+	public PutHandler(Config config) {
+		this.config = config;
+	}
+
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 		if (msg instanceof Request) {
-			PutHandlerStream processor = new PutHandlerStream((Request) msg);
+			PutHandlerStream processor = new PutHandlerStream((Request) msg, config);
 
 			ctx.pipeline()
 				.addAfter(ctx.name(), "putWorker", processor)

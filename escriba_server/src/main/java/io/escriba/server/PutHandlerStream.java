@@ -11,31 +11,32 @@ import io.netty.handler.codec.http.LastHttpContent;
 
 import java.nio.ByteBuffer;
 
-import static java.lang.Math.min;
-
 public class PutHandlerStream extends ChannelInboundHandlerAdapter {
-	private static final int DEFAULT_CACHE_SIZE = 1024 * 256;
-	private static final int MAX_FRAMES = 1024 * 512;
+
 	private ByteBuffer cache;
-	private final int cacheSize;
+
 	private CompositeByteBuf compositeBuffer;
+
+	private final Config config;
+
 	private Putter.Control control;
+
 	private ChannelHandlerContext ctx;
+
 	private final LockedBlock lockedBlock = new LockedBlock();
+
 	private final Request request;
+
 	private boolean shouldClose;
+
 	private boolean shouldWrite;
+
 	private boolean writing;
 
-	@SuppressWarnings("unused")
-	public PutHandlerStream(Request request) throws Exception {
-		this(request, DEFAULT_CACHE_SIZE);
-	}
 
-
-	public PutHandlerStream(Request request, int cacheSize) throws Exception {
+	public PutHandlerStream(Request request, Config config) throws Exception {
 		this.request = request;
-		this.cacheSize = cacheSize;
+		this.config = config;
 
 		String mediaType = request.httpRequest.headers().get(HttpHeaderNames.CONTENT_TYPE);
 
@@ -73,8 +74,8 @@ public class PutHandlerStream extends ChannelInboundHandlerAdapter {
 
 	@Override
 	public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-		compositeBuffer = ctx.alloc().compositeDirectBuffer(MAX_FRAMES);
-		cache = ByteBuffer.allocate(cacheSize);
+		compositeBuffer = ctx.alloc().compositeDirectBuffer(config.putMaxFrames);
+		cache = ByteBuffer.allocate(config.putCacheSize);
 		this.ctx = ctx;
 	}
 
@@ -104,7 +105,7 @@ public class PutHandlerStream extends ChannelInboundHandlerAdapter {
 		if (control == null || compositeBuffer == null)
 			return;
 
-		if (shouldWrite && compositeBuffer.readableBytes() >= cacheSize) {
+		if (shouldWrite && compositeBuffer.readableBytes() >= config.putCacheSize) {
 			shouldWrite = false;
 			writing = true;
 			cache.clear();
@@ -122,7 +123,7 @@ public class PutHandlerStream extends ChannelInboundHandlerAdapter {
 		if (shouldClose && !writing) {
 
 			if (compositeBuffer.readableBytes() > 0) {
-				cache.clear().limit(min(compositeBuffer.readableBytes(), cacheSize));
+				cache.clear().limit(Math.min(compositeBuffer.readableBytes(), config.putCacheSize));
 
 				compositeBuffer.markReaderIndex();
 				compositeBuffer.readBytes(cache);
