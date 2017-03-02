@@ -1,10 +1,17 @@
-String NettyVersion = "4.1.1.Final"
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
+    }
+}
 
 allprojects {
     apply plugin: 'java'
-//    apply plugin: 'maven-publish'
-    apply plugin: 'ivy-publish'
-    apply plugin: 'scala'
+    apply plugin: 'maven-publish'
+    apply plugin: 'com.jfrog.bintray'
 
     group 'io.escriba'
     version '0.1.0'
@@ -12,119 +19,79 @@ allprojects {
     repositories {
         mavenCentral()
         jcenter()
-
-        maven {
-            url "https://oss.sonatype.org/content/repositories/releases"
-        }
     }
 
 
     test {
-        testLogging.showStandardStreams = true
+        useTestNG()
     }
 
     dependencies {
-        testCompile "org.scala-lang:scala-library:2.11.8"
-        testCompile "org.scalatest:scalatest_2.11:3.0.0"
-        testCompile "junit:junit:4.12"
+        testCompile 'org.assertj:assertj-core:3.4.1'
+        testCompile 'org.testng:testng:6.9.10'
     }
 
     task sourceJar(type: Jar) {
-        from sourceSets.main.java
-        classifier 'sources'
+        from sourceSets.main.allJava
     }
 
     task javadocJar(type: Jar) {
         from javadoc
-        classifier 'javadoc'
     }
-
-//    publishing {
-//        publications {
-//            maven(MavenPublication) {
-//                from components.java
-//                artifact sourceJar {
-//                    classifier 'sources'
-//                }
-//                artifact javadocJar {
-//                    classifier 'javadoc'
-//                }
-//            }
-//        }
-//
-//        repositories {
-//            maven {
-//                url "http://repo.ti.lemaf.ufla.br/nexus/content/repositories/releases/"
-//
-//                credentials {
-//                    username "$mavenUser"
-//                    password  "mavenPassword"
-//                }
-//            }
-//        }
-//    }
 
     publishing {
         publications {
-            ivy(IvyPublication) {
-
+            maven(MavenPublication) {
                 from components.java
-
-                artifact(sourceJar) {
-                    type 'src'
-                    conf 'runtime'
+                artifact sourceJar {
+                    classifier 'sources'
                 }
-
-                artifact(javadocJar) {
-                    type 'doc'
-                    conf 'runtime'
+                artifact javadocJar {
+                    classifier 'javadoc'
                 }
             }
         }
 
         repositories {
-            ivy {
-                name "local"
-                url "${System.getenv("HOME")}/.ivy2/cache"
+            maven {
+                url "https://dl.bintray.com/lemaf/maven"
 
-                layout 'pattern', {
-                    artifact '[organisation]/[module]/[type]s/[artifact]-[revision](-[classifier])(.[ext])'
-                    ivy '[organisation]/[module]/[artifact]-[revision](.[ext])'
+                credentials {
+                    username "$mavenUser"
+                    password "$mavenPassword"
                 }
+            }
+        }
+    }
+
+    bintray {
+        user = "$bintrayUser"
+        key = "$bintrayKey"
+        publications = ['maven']
+
+        pkg {
+            repo = 'maven'
+            name = 'escriba'
+            licenses = ['MIT']
+            vcsUrl = 'https://github.com/Lemaf/escriba'
+            desc = 'eScriba'
+            userOrg = 'lemaf'
+            version {
+                name = project.version
+                released = new Date()
             }
         }
     }
 }
 
 dependencies {
-    compile 'org.mapdb:mapdb:3.0.1'
+    compile 'org.mapdb:mapdb:3.0.0-RC2'
 }
 
-project(':escriba_node') {
 
-    publishing {
-        publications {
-            ivy(IvyPublication) {
-                module 'node'
-            }
-        }
-    }
+project(':server') {
 
-    dependencies {
-        compile project(':escriba_server')
-        compile "io.netty:netty-codec-http:${NettyVersion}"
-    }
-}
-
-project(':escriba_server') {
-
-    publishing {
-        publications {
-            ivy(IvyPublication) {
-                module 'server'
-            }
-        }
-    }
+    String NettyVersion = "4.1.1.Final"
 
     dependencies {
         compile project(':')
