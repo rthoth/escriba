@@ -1,6 +1,17 @@
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
+    }
+}
+
 allprojects {
     apply plugin: 'java'
     apply plugin: 'maven-publish'
+    apply plugin: 'com.jfrog.bintray'
 
     group 'io.escriba'
     version '0.1.0'
@@ -43,12 +54,31 @@ allprojects {
 
         repositories {
             maven {
-                url "http://repo.ti.lemaf.ufla.br/nexus/content/repositories/releases/"
+                url "https://dl.bintray.com/lemaf/maven"
 
                 credentials {
                     username "$mavenUser"
                     password "$mavenPassword"
                 }
+            }
+        }
+    }
+
+    bintray {
+        user = "$bintrayUser"
+        key = "$bintrayKey"
+        publications = ['maven']
+
+        pkg {
+            repo = 'maven'
+            name = 'escriba'
+            licenses = ['MIT']
+            vcsUrl = 'https://github.com/Lemaf/escriba'
+            desc = 'eScriba'
+            userOrg = 'lemaf'
+            version {
+                name = project.version
+                released = new Date()
             }
         }
     }
